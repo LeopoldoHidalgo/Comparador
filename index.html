@@ -84,15 +84,18 @@
 
   <h2>Comparador de Precios</h2>
   
+  <!-- TOTAL DEL CARRITO -->
   <div id="carrito">🛒 Total carrito: $0.00</div>
   
   <button onclick="toggleLista()">👁️ Mostrar / Ocultar lista</button>
   
+  <!-- LISTA DETALLADA DEL CARRITO -->
   <div id="contenedorLista" class="oculto">
     <table id="detalleCarrito">
       <thead>
         <tr>
           <th>Producto</th>
+          <!-- ❌ Tienda eliminada de la vista -->
           <th>Cant.</th>
           <th>Precio</th>
           <th>Subtotal</th>
@@ -103,17 +106,23 @@
     </table>
   </div>
  
+  <!-- 🔍 BUSCADOR DE PRODUCTOS (CÓDIGO O NOMBRE) -->
   <div class="simulador-box">
     <p style="margin: 5px; font-size: 16px; font-weight: bold; color: #555;">Escribe el código o el nombre:</p>
+    
     <input type="text" id="codigoManual" placeholder="Ej: Coca o 7501234..." oninput="filtrarNombres()" autocomplete="off">
+    
     <div id="listaSugerencias" class="lista-sugerencias"></div>
+    
     <button onclick="buscarManual()">🔍 Buscar / Seleccionar</button>
   </div>
 
+  <!-- AREA DE RESULTADOS -->
   <div id="resultado"></div>
  
   <h3>Respaldo de la base</h3>
 
+  <!-- BOTONES DE RESPALDO -->
   <div class="botones-container">
     <button onclick="exportarCSV()">📤 Exportar base a CSV</button>
     <input type="file" id="archivoCSV" accept=".csv">
@@ -122,10 +131,9 @@
   </div>
  
   <script>
-    // 🟢 NUEVA ESTRUCTURA: La llave ahora es "codigo-tienda" para permitir duplicados por sucursal
     let productos = JSON.parse(localStorage.getItem("productos")) || {
-      "7501234567890-Aurrera": { codigo: "7501234567890", nombre: "Coca-Cola", presentacion: "500 ml", precioAnterior: 20.00, tienda: "Aurrera" },
-      "7501234567890-Zorro Abarrotero": { codigo: "7501234567890", nombre: "Coca-Cola", presentacion: "500 ml", precioAnterior: 17.00, tienda: "Zorro Abarrotero" }
+      "7501234567890": { nombre: "Coca-Cola", presentacion: "500 ml", precioAnterior: 18.00, tienda: "Aurrera" },
+      "7509876543210": { nombre: "Cerveza", presentacion: "1.2 L", precioAnterior: 35.00, tienda: "Walmart" }
     };
  
     let totalCarrito = parseFloat(localStorage.getItem("totalCarrito")) || 0;
@@ -157,6 +165,7 @@
         tbody.innerHTML += `
           <tr>
             <td>${item.nombre}</td>
+            <!-- ❌ Fila de tienda eliminada de la vista -->
             <td>${item.cantidad}</td>
             <td>$${item.precio.toFixed(2)}</td>
             <td>$${item.subtotal.toFixed(2)}</td>
@@ -170,6 +179,7 @@
       if (confirm(`¿Estás seguro de quitar "${detalle[index].nombre}" de la lista?`)) {
         totalCarrito -= detalle[index].subtotal;
         detalle.splice(index, 1); 
+        
         actualizarCarrito();
         guardarCarritoLocal();
       }
@@ -186,26 +196,21 @@
 
       listaDiv.innerHTML = "";
       let coincidencias = 0;
-      let codigosMostrados = new Set(); // Para no repetir el mismo producto muchas veces en la lista visual
 
-      for (const llave in productos) {
-        let p = productos[llave];
-        if (p.nombre.toLowerCase().includes(input) || p.codigo.includes(input)) {
-          if (!codigosMostrados.has(p.codigo)) {
-            coincidencias++;
-            codigosMostrados.add(p.codigo);
-            
-            let item = document.createElement("div");
-            item.className = "sugerencia-item";
-            item.innerHTML = `<strong>${p.nombre}</strong> - ${p.presentacion} <br><small style="color:#7f8c8d;">Código: ${p.codigo}</small>`;
-            
-            item.onclick = function() {
-              document.getElementById("codigoManual").value = p.codigo;
-              listaDiv.style.display = "none";
-              buscarProducto(p.codigo);
-            };
-            listaDiv.appendChild(item);
-          }
+      for (const codigo in productos) {
+        let p = productos[codigo];
+        if (p.nombre.toLowerCase().includes(input) || codigo.includes(input)) {
+          coincidencias++;
+          let item = document.createElement("div");
+          item.className = "sugerencia-item";
+          item.innerHTML = `<strong>${p.nombre}</strong> - ${p.presentacion} <br><small style="color:#7f8c8d;">Código: ${codigo}</small>`;
+          
+          item.onclick = function() {
+            document.getElementById("codigoManual").value = codigo;
+            listaDiv.style.display = "none";
+            buscarProducto(codigo);
+          };
+          listaDiv.appendChild(item);
         }
       }
 
@@ -227,9 +232,9 @@
       }
       
       let codigoEncontrado = input;
-      for (const llave in productos) {
-        if (productos[llave].nombre.toLowerCase() === input.toLowerCase()) {
-          codigoEncontrado = productos[llave].codigo;
+      for (const codigo in productos) {
+        if (productos[codigo].nombre.toLowerCase() === input.toLowerCase()) {
+          codigoEncontrado = codigo;
           break;
         }
       }
@@ -240,41 +245,25 @@
  
     function buscarProducto(codigo) {
       let contenedor = document.getElementById("resultado");
-      
-      // Buscamos si existe al menos un registro de este producto para heredar el nombre y presentación
-      let productoBase = null;
-      for (const llave in productos) {
-        if (productos[llave].codigo === codigo) {
-          productoBase = productos[llave];
-          break;
-        }
-      }
  
-      if (productoBase) {
+      if (productos[codigo]) {
+        let p = productos[codigo];
         contenedor.innerHTML = `
-          <h3>${productoBase.nombre} - ${productoBase.presentacion}</h3>
+          <h3>${p.nombre} - ${p.presentacion}</h3>
+          <p style="font-weight: bold; font-size: 16px;">Precio guardado: $${p.precioAnterior.toFixed(2)} (${p.tienda || 'Sin tienda'})</p>
           
-          <label style="font-weight: bold;">Selecciona la tienda actual:</label><br>
-          <select id="tiendaActual" onchange="actualizarPrecioAnterior('${codigo}')">
+          <select id="tiendaActual">
             <option value="Aurrera">Aurrera</option>
             <option value="Walmart">Walmart</option>
             <option value="Zorro Abarrotero">Zorro Abarrotero</option>
-            <!-- 🟢 AQUÍ PUEDES AGREGAR MÁS TIENDAS -->
+            <!-- 🟢 AQUÍ PUEDES AGREGAR MÁS TIENDAS (COPIA LA LÍNEA DE ARRIBA) -->
           </select>
           <br>
-          
-          <div id="infoPrecioAnterior">
-             <!-- Se llena dinámicamente según la tienda elegida -->
-          </div>
-          
           <input type="number" id="precioActual" placeholder="Ingresa precio en tienda hoy" step="0.01">
           
           <button onclick="comparar('${codigo}')">⚖️ Comparar</button>
           <button class="btn-rojo btn-naranja" onclick="borrarDeBaseDatos('${codigo}')">🗑️ Eliminar de la base</button>
         `;
-        
-        // Disparamos el cálculo del precio anterior para la tienda que sale seleccionada por defecto (Aurrera)
-        actualizarPrecioAnterior(codigo);
       } else {
         contenedor.innerHTML = `
           <h3>Producto no registrado (${codigo})</h3>
@@ -286,7 +275,7 @@
             <option value="Aurrera">Aurrera</option>
             <option value="Walmart">Walmart</option>
             <option value="Zorro Abarrotero">Zorro Abarrotero</option>
-            <!-- 🟢 AQUÍ PUEDES AGREGAR MÁS TIENDAS -->
+            <!-- 🟢 AQUÍ PUEDES AGREGAR MÁS TIENDAS (COPIA LA LÍNEA DE ARRIBA) -->
           </select>
           <br>
           <input type="number" id="precioNuevo" placeholder="Precio actual" step="0.01"><br>
@@ -295,33 +284,12 @@
       }
     }
 
-    // 🟢 NUEVA FUNCIÓN: Al cambiar de tienda en el menú, busca si ya tenías un precio guardado EN ESA tienda
-    function actualizarPrecioAnterior(codigo) {
-      let tiendaElegida = document.getElementById("tiendaActual").value;
-      let llave = `${codigo}-${tiendaElegida}`;
-      let infoDiv = document.getElementById("infoPrecioAnterior");
-
-      if (productos[llave]) {
-        infoDiv.innerHTML = `<p style="font-weight: bold; font-size: 16px; color: #27ae60;">Precio guardado en ${tiendaElegida}: $${productos[llave].precioAnterior.toFixed(2)}</p>`;
-      } else {
-        infoDiv.innerHTML = `<p style="font-weight: bold; font-size: 16px; color: #e67e22;">Aún no tienes precios guardados de este producto en ${tiendaElegida}.</p>`;
-      }
-    }
-
     function borrarDeBaseDatos(codigo) {
-      let tiendaElegida = document.getElementById("tiendaActual").value;
-      let llave = `${codigo}-${tiendaElegida}`;
-      
-      if (!productos[llave]) {
-        alert("No hay ningún registro de este producto en esta tienda para borrar.");
-        return;
-      }
-
-      let nombre = productos[llave].nombre;
-      if (confirm(`¿Estás seguro de que quieres eliminar el registro de "${nombre}" en la tienda ${tiendaElegida}?`)) {
-        delete productos[llave];
+      let nombre = productos[codigo].nombre;
+      if (confirm(`¿Estás seguro de que quieres eliminar "${nombre}" de la base de datos?`)) {
+        delete productos[codigo];
         guardarLocal();
-        alert(`Registro borrado exitosamente.`);
+        alert(`"${nombre}" ha sido borrado exitosamente.`);
         document.getElementById("resultado").innerHTML = "";
       }
     }
@@ -329,18 +297,11 @@
     function comparar(codigo) {
       let inputPrecio = document.getElementById("precioActual").value.trim();
       let inputTienda = document.getElementById("tiendaActual").value;
-      let llave = `${codigo}-${inputTienda}`;
-      
+      let p = productos[codigo];
       let precioActual;
       
-      // Si dejas vacío el campo de precio y ya tenías un precio en ESA tienda, hereda el anterior
       if (inputPrecio === "") {
-        if (productos[llave]) {
-          precioActual = productos[llave].precioAnterior;
-        } else {
-          alert("No hay un precio anterior guardado para esta tienda. Por favor ingresa el precio actual.");
-          return;
-        }
+        precioActual = p.precioAnterior;
       } else {
         precioActual = parseFloat(inputPrecio);
       }
@@ -350,31 +311,15 @@
         return;
       }
  
-      // Si el producto no existía en esa tienda en específico, creamos un registro base con precio 0 para calcular la diferencia
-      if (!productos[llave]) {
-         // Buscamos datos base para no pedirle que escriba nombre y presentación otra vez
-         let base = null;
-         for (const k in productos) { if (productos[k].codigo === codigo) { base = productos[k]; break; } }
-         
-         productos[llave] = { 
-            codigo: codigo, 
-            nombre: base.nombre, 
-            presentacion: base.presentacion, 
-            precioAnterior: precioActual, // Lo seteamos como actual
-            tienda: inputTienda 
-         };
-      }
-
-      let p = productos[llave];
       let diferencia = precioActual - p.precioAnterior;
-      let porcentaje = p.precioAnterior > 0 ? ((diferencia / p.precioAnterior) * 100).toFixed(2) : "0.00";
+      let porcentaje = ((diferencia / p.precioAnterior) * 100).toFixed(2);
  
       document.getElementById("resultado").innerHTML = `
         <h3>${p.nombre} - ${p.presentacion}</h3>
         <table>
           <tr>
-            <th>P. Ant. (${p.tienda})</th>
-            <th>P. Act.</th>
+            <th>P. Ant. (${p.tienda || 'Base'})</th>
+            <th>P. Act. (${inputTienda})</th>
             <th>Dif.</th>
           </tr>
           <tr>
@@ -387,8 +332,8 @@
         <button onclick="preguntarYAgregar('${codigo}', '${p.nombre}', ${precioActual}, '${inputTienda}')">➕ Agregar al carrito</button>
       `;
  
-      // Guardamos el nuevo precio para esa tienda
-      productos[llave].precioAnterior = precioActual;
+      productos[codigo].precioAnterior = precioActual;
+      productos[codigo].tienda = inputTienda;
       guardarLocal();
     }
 
@@ -415,6 +360,7 @@
       }
       
       totalCarrito += subtotalSumado;
+      
       actualizarCarrito();
       guardarCarritoLocal();
       
@@ -433,8 +379,7 @@
         return;
       }
 
-      let llave = `${codigo}-${tiendaNueva}`;
-      productos[llave] = { codigo: codigo, nombre, presentacion, precioAnterior: precioNuevo, tienda: tiendaNueva };
+      productos[codigo] = { nombre, presentacion, precioAnterior: precioNuevo, tienda: tiendaNueva };
       guardarLocal();
       alert("¡Producto guardado exitosamente!");
       buscarProducto(codigo);
@@ -443,17 +388,18 @@
     function resetCarrito() {
       totalCarrito = 0;
       detalle = [];
+      
       actualizarCarrito();
       guardarCarritoLocal();
+      
       alert("Carrito restablecido.");
     }
 
-    // 🟢 NUEVO: El CSV ahora guarda Código y Tienda separados para que los uses en tu análisis
     function exportarCSV() {
       let csvContent = "codigo,nombre,presentacion,precioAnterior,tienda\n";
-      for (const llave in productos) {
-        let p = productos[llave];
-        csvContent += `"${p.codigo}","${p.nombre}","${p.presentacion}",${p.precioAnterior},"${p.tienda}"\n`;
+      for (const codigo in productos) {
+        let p = productos[codigo];
+        csvContent += `"${codigo}","${p.nombre}","${p.presentacion}",${p.precioAnterior},"${p.tienda || ''}"\n`;
       }
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
@@ -484,22 +430,21 @@
           let columnas = linea.split(",").map(val => val.replace(/^"|"$/g, ''));
           
           if (columnas.length >= 4) {
-            let codigo = columnas[0];
-            let nombre = columnas[1];
-            let presentacion = columnas[2];
-            let precioAnterior = parseFloat(columnas[3]);
-            let tienda = columnas[4] || "Desconocida";
+            let codigo = columnas;
+            let nombre = columnas;
+            let presentacion = columnas;
+            let precioAnterior = parseFloat(columnas);
+            let tienda = columnas || "Desconocida";
 
             if (codigo && nombre && !isNaN(precioAnterior)) {
-              let llave = `${codigo}-${tienda}`;
-              productos[llave] = { codigo, nombre, presentacion, precioAnterior, tienda };
+              productos[codigo] = { nombre, presentacion, precioAnterior, tienda };
               importados++;
             }
           }
         }
         if (importados > 0) {
           guardarLocal();
-          alert(`¡Éxito! Se han importado/actualizado ${importados} registros.`);
+          alert(`¡Éxito! Se han importado/actualizado ${importados} productos.`);
           location.reload(); 
         } else {
           alert("No se encontraron registros válidos.");
