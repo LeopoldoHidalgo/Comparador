@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comparador de Precios con Carrito</title>
   
+  <!-- 📷 Librería para escanear Códigos QR y de Barras -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  
   <style>
     body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f6f9; color: #333; }
     h2, h3 { color: #2c3e50; }
@@ -78,6 +81,22 @@
     }
     .botones-container input[type="file"] { width: 85%; max-width: 350px; padding: 10px; margin: 0; }
     .botones-container button { width: 85%; max-width: 350px; }
+
+    /* 📷 Estilos del Lector de Cámara */
+    #lector-qr {
+      width: 100%;
+      max-width: 350px;
+      margin: 10px auto;
+      border-radius: 8px;
+      overflow: hidden;
+      display: none;
+    }
+    .btn-camara {
+      background-color: #2ecc71;
+    }
+    .btn-camara:hover {
+      background-color: #27ae60;
+    }
   </style>
 </head>
 <body onload="cargarTodo()">
@@ -95,7 +114,6 @@
       <thead>
         <tr>
           <th>Producto</th>
-          <!-- ❌ Tienda eliminada de la vista -->
           <th>Cant.</th>
           <th>Precio</th>
           <th>Subtotal</th>
@@ -108,12 +126,16 @@
  
   <!-- 🔍 BUSCADOR DE PRODUCTOS (CÓDIGO O NOMBRE) -->
   <div class="simulador-box">
-    <p style="margin: 5px; font-size: 16px; font-weight: bold; color: #555;">Escribe el código o el nombre:</p>
+    <p style="margin: 5px; font-size: 16px; font-weight: bold; color: #555;">Escribe el código, nombre o escanea:</p>
     
     <input type="text" id="codigoManual" placeholder="Ej: Coca o 7501234..." oninput="filtrarNombres()" autocomplete="off">
     
     <div id="listaSugerencias" class="lista-sugerencias"></div>
     
+    <!-- 📷 Lector de cámara oculto inicialmente -->
+    <div id="lector-qr"></div>
+    
+    <button class="btn-camara" id="btnToggleCamara" onclick="toggleCamara()">📷 Abrir Cámara</button>
     <button onclick="buscarManual()">🔍 Buscar / Seleccionar</button>
   </div>
 
@@ -138,6 +160,9 @@
  
     let totalCarrito = parseFloat(localStorage.getItem("totalCarrito")) || 0;
     let detalle = JSON.parse(localStorage.getItem("detalleCarrito")) || [];
+    
+    // 📷 Variable para controlar el lector de cámara
+    let html5QrCode = null;
  
     function guardarLocal() {
       localStorage.setItem("productos", JSON.stringify(productos));
@@ -165,7 +190,6 @@
         tbody.innerHTML += `
           <tr>
             <td>${item.nombre}</td>
-            <!-- ❌ Fila de tienda eliminada de la vista -->
             <td>${item.cantidad}</td>
             <td>$${item.precio.toFixed(2)}</td>
             <td>$${item.subtotal.toFixed(2)}</td>
@@ -231,15 +255,7 @@
         return;
       }
       
-      let codigoEncontrado = input;
-      for (const codigo in productos) {
-        if (productos[codigo].nombre.toLowerCase() === input.toLowerCase()) {
-          codigoEncontrado = codigo;
-          break;
-        }
-      }
-      
-      buscarProducto(codigoEncontrado);
+      buscarProducto(input);
       document.getElementById("codigoManual").value = ""; 
     }
  
@@ -256,7 +272,6 @@
             <option value="Aurrera">Aurrera</option>
             <option value="Walmart">Walmart</option>
             <option value="Zorro Abarrotero">Zorro Abarrotero</option>
-            <!-- 🟢 AQUÍ PUEDES AGREGAR MÁS TIENDAS (COPIA LA LÍNEA DE ARRIBA) -->
           </select>
           <br>
           <input type="number" id="precioActual" placeholder="Ingresa precio en tienda hoy" step="0.01">
@@ -275,7 +290,6 @@
             <option value="Aurrera">Aurrera</option>
             <option value="Walmart">Walmart</option>
             <option value="Zorro Abarrotero">Zorro Abarrotero</option>
-            <!-- 🟢 AQUÍ PUEDES AGREGAR MÁS TIENDAS (COPIA LA LÍNEA DE ARRIBA) -->
           </select>
           <br>
           <input type="number" id="precioNuevo" placeholder="Precio actual" step="0.01"><br>
@@ -396,7 +410,7 @@
     }
 
     function exportarCSV() {
-      let csvContent = "codigo,nombre,presentacion,precioAnterior,tienda\n";
+      let csvContent = "sep=,\ncodigo,nombre,presentacion,precioAnterior,tienda\n";
       for (const codigo in productos) {
         let p = productos[codigo];
         csvContent += `"${codigo}","${p.nombre}","${p.presentacion}",${p.precioAnterior},"${p.tienda || ''}"\n`;
@@ -415,26 +429,33 @@
     function importarCSV() {
       const fileInput = document.getElementById('archivoCSV');
       const file = fileInput.files;
+      
       if (!file) {
         alert("Por favor, selecciona un archivo CSV primero.");
         return;
       }
+      
       const reader = new FileReader();
       reader.onload = function(e) {
         const contenido = e.target.result;
         const lineas = contenido.split("\n");
         let importados = 0;
-        for (let i = 1; i < lineas.length; i++) {
+        
+        for (let i = 0; i < lineas.length; i++) {
           let linea = lineas[i].trim();
-          if (!linea) continue;
+          
+          if (!linea || linea.startsWith("sep=") || linea.startsWith("codigo,nombre")) {
+            continue;
+          }
+          
           let columnas = linea.split(",").map(val => val.replace(/^"|"$/g, ''));
           
           if (columnas.length >= 4) {
-            let codigo = columnas;
-            let nombre = columnas;
-            let presentacion = columnas;
-            let precioAnterior = parseFloat(columnas);
-            let tienda = columnas || "Desconocida";
+            let codigo = columnas[0];
+            let nombre = columnas[1];
+            let presentacion = columnas[2];
+            let precioAnterior = parseFloat(columnas[3]);
+            let tienda = columnas[4] || "Desconocida";
 
             if (codigo && nombre && !isNaN(precioAnterior)) {
               productos[codigo] = { nombre, presentacion, precioAnterior, tienda };
@@ -442,6 +463,7 @@
             }
           }
         }
+        
         if (importados > 0) {
           guardarLocal();
           alert(`¡Éxito! Se han importado/actualizado ${importados} productos.`);
@@ -451,6 +473,70 @@
         }
       };
       reader.readAsText(file);
+    }
+
+    // 📷 FUNCIONES DE LA CÁMARA
+    function toggleCamara() {
+      const lectorDiv = document.getElementById("lector-qr");
+      const btn = document.getElementById("btnToggleCamara");
+
+      if (!html5QrCode) {
+        html5QrCode = new Html5Qrcode("lector-qr");
+      }
+
+      if (lectorDiv.style.display === "none" || lectorDiv.style.display === "") {
+        lectorDiv.style.display = "block";
+        btn.textContent = "❌ Cerrar Cámara";
+        btn.style.backgroundColor = "#e74c3c";
+
+        // Iniciar el lector apuntando a la cámara trasera (environment)
+        html5QrCode.start(
+          { facingMode: "environment" }, 
+          {
+            fps: 10,  // Cuadros por segundo para procesar
+            qrbox: { width: 250, height: 150 } // Cuadro de enfoque en la pantalla
+          },
+          onScanSuccess,
+          onScanFailure
+        ).catch(err => {
+          alert("Error al acceder a la cámara. Asegúrate de dar permisos.");
+          cerrarCamara();
+          console.error(err);
+        });
+      } else {
+        cerrarCamara();
+      }
+    }
+
+    function cerrarCamara() {
+      const lectorDiv = document.getElementById("lector-qr");
+      const btn = document.getElementById("btnToggleCamara");
+      
+      lectorDiv.style.display = "none";
+      btn.textContent = "📷 Abrir Cámara";
+      btn.style.backgroundColor = "#2ecc71";
+
+      if (html5QrCode) {
+        html5QrCode.stop().catch(err => console.error("Error al detener cámara:", err));
+      }
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+      // Al escanear con éxito un código
+      document.getElementById("codigoManual").value = decodedText;
+      
+      // Vibrar el celular ligeramente si el navegador lo permite
+      if (navigator.vibrate) {
+        navigator.vibrate(200);
+      }
+
+      // Detener cámara y buscar el producto de inmediato
+      cerrarCamara();
+      buscarProducto(decodedText);
+    }
+
+    function onScanFailure(error) {
+      // Ignoramos los fallos por cada cuadro de video donde no encuentra códigos
     }
   </script>
 </body>
