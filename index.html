@@ -23,7 +23,7 @@
     th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
     th { background-color: #3498db; color: white; }
     
-    /* Caja de búsqueda manual simulada */
+    /* Caja de búsqueda simulada */
     .simulador-box {
       margin: 15px auto;
       padding: 15px;
@@ -33,7 +33,33 @@
       border-radius: 8px;
       background: #fff;
       box-sizing: border-box;
+      position: relative;
     }
+    
+    /* 🟢 NUEVO: Estilos para la lista desplegable de sugerencias */
+    .lista-sugerencias {
+      position: absolute;
+      top: 100%;
+      left: 7.5%;
+      width: 85%;
+      background: white;
+      border: 1px solid #ccc;
+      border-top: none;
+      border-radius: 0 0 5px 5px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      z-index: 10;
+      text-align: left;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+    .sugerencia-item {
+      padding: 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+    }
+    .sugerencia-item:hover { background-color: #f1f1f1; }
+    .sugerencia-item:last-child { border-bottom: none; }
     
     /* Contenedor de botones de respaldo */
     .botones-container {
@@ -52,7 +78,7 @@
 
   <h2>Comparador de Precios</h2>
   
-  <!-- 🛒 TOTAL DEL CARRITO -->
+  <!-- TOTAL DEL CARRITO -->
   <div id="carrito">🛒 Total carrito: $0.00</div>
   
   <button onclick="toggleLista()">👁️ Mostrar / Ocultar lista</button>
@@ -72,11 +98,17 @@
     </table>
   </div>
  
-  <!-- 🔍 SIMULADOR DE ESCÁNER (Escribir a mano) -->
+  <!-- 🔍 BUSCADOR DE PRODUCTOS (CÓDIGO O NOMBRE) -->
   <div class="simulador-box">
-    <p style="margin: 5px; font-size: 16px; font-weight: bold; color: #555;">[Simulador] Escribe el código de barras:</p>
-    <input type="text" id="codigoManual" placeholder="Ej: 7501234567890">
-    <button onclick="buscarManual()">🔍 Buscar / Simular Escaneo</button>
+    <p style="margin: 5px; font-size: 16px; font-weight: bold; color: #555;">Escribe el código o el nombre:</p>
+    
+    <!-- Al escribir aquí se dispara la función de búsqueda -->
+    <input type="text" id="codigoManual" placeholder="Ej: Coca o 7501234..." oninput="filtrarNombres()" autocomplete="off">
+    
+    <!-- Lista donde aparecerán las opciones encontradas -->
+    <div id="listaSugerencias" class="lista-sugerencias"></div>
+    
+    <button onclick="buscarManual()">🔍 Buscar / Seleccionar</button>
   </div>
 
   <!-- AREA DE RESULTADOS -->
@@ -84,7 +116,7 @@
  
   <h3>Respaldo de la base</h3>
 
-  <!-- 📥📤 BOTONES DE RESPALDO EN COLUMNA -->
+  <!-- BOTONES DE RESPALDO -->
   <div class="botones-container">
     <button onclick="exportarCSV()">📤 Exportar base a CSV</button>
     <input type="file" id="archivoCSV" accept=".csv">
@@ -111,7 +143,6 @@
       lista.classList.toggle("oculto");
     }
  
-    // Actualiza el dibujado de la tabla del carrito y el total acumulado
     function actualizarCarrito() {
       document.getElementById("carrito").textContent = `🛒 Total carrito: $${totalCarrito.toFixed(2)}`;
       let tbody = document.querySelector("#detalleCarrito tbody");
@@ -128,14 +159,68 @@
       });
     }
 
-    // Simula la lectura manual del código
-    function buscarManual() {
-      let codigo = document.getElementById("codigoManual").value.trim();
-      if (!codigo) {
-        alert("Por favor ingresa un código de barras.");
+    // 🟢 NUEVA FUNCIÓN: Filtra los productos por nombre a medida que escribes
+    function filtrarNombres() {
+      let input = document.getElementById("codigoManual").value.trim().toLowerCase();
+      let listaDiv = document.getElementById("listaSugerencias");
+      
+      // Si el campo está vacío, escondemos la lista y no hacemos nada
+      if (!input) {
+        listaDiv.style.display = "none";
         return;
       }
-      buscarProducto(codigo);
+
+      listaDiv.innerHTML = "";
+      let coincidencias = 0;
+
+      for (const codigo in productos) {
+        let p = productos[codigo];
+        // Buscamos si el texto escrito coincide con el nombre o con el propio código
+        if (p.nombre.toLowerCase().includes(input) || codigo.includes(input)) {
+          coincidencias++;
+          let item = document.createElement("div");
+          item.className = "sugerencia-item";
+          item.innerHTML = `<strong>${p.nombre}</strong> - ${p.presentacion} <br><small style="color:#7f8c8d;">Código: ${codigo}</small>`;
+          
+          // Al hacer clic sobre el producto, se auto-llena el input y se busca
+          item.onclick = function() {
+            document.getElementById("codigoManual").value = codigo;
+            listaDiv.style.display = "none";
+            buscarProducto(codigo);
+          };
+          listaDiv.appendChild(item);
+        }
+      }
+
+      // Si encontramos opciones, mostramos la lista flotante
+      if (coincidencias > 0) {
+        listaDiv.style.display = "block";
+      } else {
+        listaDiv.style.display = "none";
+      }
+    }
+
+    function buscarManual() {
+      let input = document.getElementById("codigoManual").value.trim();
+      let listaDiv = document.getElementById("listaSugerencias");
+      listaDiv.style.display = "none"; // Ocultamos la lista
+
+      if (!input) {
+        alert("Por favor ingresa un código de barras o el nombre del producto.");
+        return;
+      }
+      
+      // Si el usuario le dio a "buscar" con el nombre escrito sin tocar la lista:
+      // Buscamos la primera coincidencia que tenga ese nombre
+      let codigoEncontrado = input;
+      for (const codigo in productos) {
+        if (productos[codigo].nombre.toLowerCase() === input.toLowerCase()) {
+          codigoEncontrado = codigo;
+          break;
+        }
+      }
+      
+      buscarProducto(codigoEncontrado);
       document.getElementById("codigoManual").value = ""; 
     }
  
@@ -193,16 +278,14 @@
         <button onclick="preguntarYAgregar('${codigo}', '${p.nombre}', ${precioActual})">➕ Agregar al carrito</button>
       `;
  
-      // Actualizamos el precio anterior con el nuevo precio detectado para futuras compras
       productos[codigo].precioAnterior = precioActual;
       guardarLocal();
     }
 
-    // 🙋‍♂️ Pregunta la cantidad exacta de piezas a llevar mediante una ventana flotante (Prompt)
     function preguntarYAgregar(codigo, nombre, precio) {
       let cantPrompt = prompt(`¿Cuántas piezas de "${nombre}" llevarás?`, "1");
       
-      if (cantPrompt === null) return; // Si el usuario cancela, no hace nada
+      if (cantPrompt === null) return; 
       
       let cantidad = parseInt(cantPrompt);
       
@@ -212,7 +295,7 @@
       }
       
       let item = detalle.find(i => i.codigo === codigo);
-      let subtotalSumado = precio * cantidad; // Multiplicación del costo actual por las piezas solicitadas
+      let subtotalSumado = precio * cantidad;
 
       if (item) {
         item.cantidad += cantidad;
@@ -224,7 +307,7 @@
       totalCarrito += subtotalSumado;
       actualizarCarrito();
       alert(`¡Éxito! Agregaste ${cantidad} pieza(s) de ${nombre}.`);
-      document.getElementById("resultado").innerHTML = ""; // Limpiamos pantalla de búsqueda
+      document.getElementById("resultado").innerHTML = ""; 
     }
 
     function guardarNuevoProducto(codigo) {
@@ -240,7 +323,7 @@
       productos[codigo] = { nombre, presentacion, precioAnterior: precioNuevo };
       guardarLocal();
       alert("¡Producto guardado exitosamente!");
-      buscarProducto(codigo); // Recarga para ofrecer la comparativa de inmediato
+      buscarProducto(codigo);
     }
 
     function resetCarrito() {
@@ -250,7 +333,6 @@
       alert("Carrito restablecido.");
     }
 
-    // EXPORTAR BASE A CSV
     function exportarCSV() {
       let csvContent = "codigo,nombre,presentacion,precioAnterior\n";
       for (const codigo in productos) {
@@ -268,10 +350,9 @@
       document.body.removeChild(link);
     }
 
-    // IMPORTAR BASE DESDE CSV
     function importarCSV() {
       const fileInput = document.getElementById('archivoCSV');
-      const file = fileInput.files[0];
+      const file = fileInput.files;
       if (!file) {
         alert("Por favor, selecciona un archivo CSV primero.");
         return;
@@ -286,10 +367,10 @@
           if (!linea) continue;
           let columnas = linea.split(",").map(val => val.replace(/^"|"$/g, ''));
           if (columnas.length >= 4) {
-            let codigo = columnas[0];
-            let nombre = columnas[1];
-            let presentacion = columnas[2];
-            let precioAnterior = parseFloat(columnas[3]);
+            let codigo = columnas;
+            let nombre = columnas;
+            let presentacion = columnas;
+            let precioAnterior = parseFloat(columnas);
             if (codigo && nombre && !isNaN(precioAnterior)) {
               productos[codigo] = { nombre, presentacion, precioAnterior };
               importados++;
