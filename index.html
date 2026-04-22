@@ -2,7 +2,6 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <!-- 📱 Importante para que el celular no reduzca la escala de la página -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comparador de Precios con Carrito</title>
   
@@ -12,7 +11,6 @@
   <style>
     body { font-family: Arial, sans-serif; text-align: center; }
     
-    /* Inputs más grandes y adaptables */
     input { 
       padding: 15px; 
       font-size: 18px; 
@@ -22,7 +20,6 @@
       box-sizing: border-box; 
     }
     
-    /* Botones grandes y responsivos */
     button { 
       padding: 15px 30px; 
       font-size: 18px; 
@@ -59,14 +56,9 @@
       box-sizing: border-box;
     }
     
-    .manual-box button {
-      width: 100%;
-      margin-top: 10px;
-    }
-    
+    .manual-box button { width: 100%; margin-top: 10px; }
     #status { font-size: 14px; color: #7f8c8d; margin-top: 5px; }
 
-    /* Estilos para alinear los botones uno sobre otro */
     .botones-container {
       display: flex;
       flex-direction: column;
@@ -76,16 +68,8 @@
       margin-bottom: 30px;
     }
     
-    .botones-container input[type="file"] {
-      width: 80%;
-      max-width: 350px;
-      padding: 10px;
-      margin: 0;
-    }
-    
-    .botones-container button {
-      width: 100%;
-    }
+    .botones-container input[type="file"] { width: 80%; max-width: 350px; padding: 10px; margin: 0; }
+    .botones-container button { width: 100%; }
   </style>
 </head>
 <body onload="verificarLibreria()">
@@ -183,15 +167,16 @@
       }
     }
 
-    // ⚡ FUNCIÓN CORREGIDA: Apaga la cámara forzosamente de raíz
+    // ⚡ FUNCIÓN CORREGIDA PARA DISPOSITIVOS MODERNOS
     function encender() {
       const btnStart = document.getElementById('btnStart');
       const readerDiv = document.getElementById('reader');
+      const statusText = document.getElementById('status');
 
       btnStart.style.display = 'none';
       readerDiv.style.display = 'block';
+      statusText.innerText = "Buscando cámaras disponibles...";
 
-      // Si por alguna razón había una instancia previa, la destruimos
       if (scanner !== null) {
          try { scanner.clear(); } catch(e) {}
       }
@@ -199,30 +184,73 @@
       scanner = new Html5Qrcode("reader");
       const config = { fps: 10, qrbox: { width: 250, height: 150 } };
 
-      scanner.start({ facingMode: "environment" }, config, (text) => {
-        // En lugar de scanner.clear(), usamos scanner.stop() para liberar el hardware del teléfono
-        scanner.stop().then(() => {
-          readerDiv.style.display = 'none';
-          btnStart.style.display = 'block';
-          btnStart.innerText = "Escanear otro producto";
+      // 1. Preguntamos al teléfono qué cámaras tiene
+      Html5Qrcode.getCameras().then(devices => {
+        let cameraId = null;
+
+        if (devices && devices.length > 0) {
+          // Buscamos una cámara que diga "back" o "trasera"
+          const backCamera = devices.find(device => 
+            device.label.toLowerCase().includes("back") || 
+            device.label.toLowerCase().includes("trasera") ||
+            device.label.toLowerCase().includes("ambiente")
+          );
           
-          // Matamos la instancia para que el próximo encendido empiece de cero
-          scanner = null; 
+          // Si la encuentra usa esa, si no usa la última de la lista (suele ser la trasera)
+          cameraId = backCamera ? backCamera.id : devices[devices.length - 1].id;
+        }
+
+        // 2. Encendemos usando el ID de la cámara encontrada
+        const target = cameraId ? { deviceId: { exact: cameraId } } : { facingMode: "environment" };
+
+        scanner.start(target, config, (text) => {
+          scanner.stop().then(() => {
+            readerDiv.style.display = 'none';
+            btnStart.style.display = 'block';
+            btnStart.innerText = "Escanear otro producto";
+            statusText.innerText = "Lectura exitosa.";
+            scanner = null; 
+            buscarProducto(text);
+          }).catch(err => {
+            readerDiv.style.display = 'none';
+            btnStart.style.display = 'block';
+            scanner = null;
+            buscarProducto(text);
+          });
           
-          buscarProducto(text);
+          if (navigator.vibrate) navigator.vibrate(100);
         }).catch(err => {
-          console.error("Error al intentar detener la cámara: ", err);
-          // Si el stop falla, al menos ocultamos y limpiamos el DOM
-          readerDiv.style.display = 'none';
-          btnStart.style.display = 'block';
-          scanner = null;
-          buscarProducto(text);
+          console.error("Fallo con ID, intentando modo genérico:", err);
+          // 3. Fallback: Si el ID falló por permisos o bloqueos, intenta encender de forma estándar
+          scanner.start({ facingMode: "environment" }, config, (text) => {
+             scanner.stop().then(() => {
+                readerDiv.style.display = 'none';
+                btnStart.style.display = 'block';
+                scanner = null; 
+                buscarProducto(text);
+             });
+          }).catch(err2 => {
+             alert("Error crítico de cámara: Por favor, concede permisos de cámara en los ajustes de tu navegador o prueba en modo incógnito.");
+             readerDiv.style.display = 'none';
+             btnStart.style.display = 'block';
+             statusText.innerText = "Fallo al iniciar cámara.";
+          });
         });
-        
-        if (navigator.vibrate) navigator.vibrate(100);
+
       }).catch(err => {
-        alert("Error de cámara: " + err);
-        btnStart.style.display = 'block';
+        // Fallback total en caso de que ni siquiera deje listar las cámaras (muy común en iPhone/Safari)
+        scanner.start({ facingMode: "environment" }, config, (text) => {
+            scanner.stop().then(() => {
+              readerDiv.style.display = 'none';
+              btnStart.style.display = 'block';
+              scanner = null; 
+              buscarProducto(text);
+            });
+        }).catch(err3 => {
+            alert("No se pudo acceder a las cámaras. Asegúrate de estar usando una conexión segura HTTPS.");
+            readerDiv.style.display = 'none';
+            btnStart.style.display = 'block';
+        });
       });
     }
 
