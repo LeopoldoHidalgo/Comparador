@@ -278,9 +278,62 @@
       alert("Carrito restablecido.");
     }
 
-    // Funciones dummy para evitar errores al probar los botones
-    function exportarCSV() { alert("Función Exportar CSV aún no programada."); }
-    function importarCSV() { alert("Función Importar CSV aún no programada."); }
+    // 🟢 NUEVO: Funciones reales para exportar e importar datos
+
+    function exportarCSV() {
+      let csvContent = "codigo,nombre,presentacion,precioAnterior\n";
+      for (const codigo in productos) {
+        let p = productos[codigo];
+        csvContent += `"${codigo}","${p.nombre}","${p.presentacion}",${p.precioAnterior}\n`;
+      }
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.setAttribute("href", url);
+      link.setAttribute("download", "base_de_productos.csv");
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function importarCSV() {
+      const fileInput = document.getElementById('archivoCSV');
+      const file = fileInput.files;
+      if (!file) {
+        alert("Por favor, selecciona un archivo CSV primero.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const contenido = e.target.result;
+        const lineas = contenido.split("\n");
+        let importados = 0;
+        for (let i = 1; i < lineas.length; i++) {
+          let linea = lineas[i].trim();
+          if (!linea) continue;
+          let columnas = linea.split(",").map(val => val.replace(/^"|"$/g, ''));
+          if (columnas.length >= 4) {
+            let codigo = columnas;
+            let nombre = columnas;
+            let presentacion = columnas;
+            let precioAnterior = parseFloat(columnas);
+            if (codigo && nombre && !isNaN(precioAnterior)) {
+              productos[codigo] = { nombre, presentacion, precioAnterior };
+              importados++;
+            }
+          }
+        }
+        if (importados > 0) {
+          guardarLocal();
+          alert(`¡Éxito! Se han importado ${importados} productos.`);
+          location.reload(); 
+        } else {
+          alert("No se encontraron registros válidos.");
+        }
+      };
+      reader.readAsText(file);
+    }
   </script>
 </body>
 </html>
