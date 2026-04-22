@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comparador de Precios con Carrito</title>
   
-  <!-- Servidor CDN UNPKG: El más estable para esta librería -->
+  <!-- Servidor CDN estable -->
   <script src="https://unpkg.com" type="text/javascript"></script>
   
   <style>
@@ -13,7 +13,6 @@
     input { padding: 12px; font-size: 16px; margin: 10px 0; width: 100%; max-width: 380px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
     button { padding: 12px 20px; font-size: 16px; background: #3498db; color: white; border: none; border-radius: 5px; margin: 5px; cursor: pointer; font-weight: bold; }
     button:hover { background: #2980b9; }
-    button:disabled { background: #95a5a6; cursor: not-allowed; }
     
     table { margin: 20px auto; border-collapse: collapse; width: 100%; max-width: 600px; background: #fff; font-size: 14px; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
@@ -22,6 +21,7 @@
     #carrito { font-size: 22px; font-weight: bold; margin: 15px; color: #2c3e50; }
     .oculto { display: none; }
     
+    /* El lector se mantiene inicialmente oculto como en tu checador */
     #reader { width: 100%; max-width: 400px; margin: 0 auto; border-radius: 8px; background: #000; display: none; }
     
     #btnStart {
@@ -29,9 +29,9 @@
       margin: 15px auto;
       padding: 15px 30px;
       font-size: 18px;
+      background: #2ecc71;
     }
 
-    /* Caja manual centrada */
     .manual-box {
       margin: 15px auto;
       padding: 15px;
@@ -42,10 +42,9 @@
       background: #fff;
       box-sizing: border-box;
       display: inline-block;
-      text-align: center; /* Centra el contenido interior */
+      text-align: center; 
     }
 
-    /* Texto "Escribe el código a mano" centrado */
     .manual-box p {
       margin: 5px 0;
       font-size: 14px; 
@@ -54,9 +53,6 @@
       width: 100%;
     }
 
-    #status { font-size: 14px; color: #7f8c8d; margin-top: 5px; text-align: center; }
-
-    /* Caja gris para el respaldo de la base */
     .seccion-respaldo {
       display: flex;
       flex-direction: column;
@@ -119,9 +115,8 @@
  
   <p>Escanea el código de barras</p>
   
-  <button id="btnStart" onclick="encender()" disabled>⏳ Cargando cámara...</button>
-  <div id="status">Por favor, espera a que el botón se active</div>
-  
+  <!-- Estructura exacta de botones de tu checador -->
+  <button id="btnStart" onclick="encender()">Encender Cámara</button>
   <div id="reader"></div>
 
   <div class="manual-box">
@@ -175,46 +170,41 @@
       });
     }
 
-    function verificarLibreria() {
-      const btnStart = document.getElementById('btnStart');
-      const statusText = document.getElementById('status');
-      
-      if (typeof Html5Qrcode !== "undefined") {
-        btnStart.disabled = false;
-        btnStart.innerText = "Encender Cámara";
-        btnStart.style.background = "#2ecc71"; 
-        statusText.innerText = "Librería cargada. Listo para escanear.";
-        statusText.style.color = "#27ae60";
-      } else {
-        setTimeout(verificarLibreria, 500);
-      }
-    }
-
+    // MÉTODO EXTRAÍDO DE TU CHECADOR: Crea el scanner bajo demanda
     function encender() {
+      if (typeof Html5Qrcode === "undefined") {
+        alert("La librería aún no carga. Espera 2 segundos.");
+        return;
+      }
+
       const btnStart = document.getElementById('btnStart');
       const readerDiv = document.getElementById('reader');
 
       btnStart.style.display = 'none';
       readerDiv.style.display = 'block';
 
-      scanner = new Html5Qrcode("reader");
-      const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+      // Espera 500ms para evitar colapsar los hilos de Chrome en celulares (Solución a tu código)
+      setTimeout(() => {
+        scanner = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 150 } };
 
-      scanner.start({ facingMode: "environment" }, config, (text) => {
-        scanner.stop().then(() => {
-          scanner.clear();
-          readerDiv.style.display = 'none';
+        scanner.start({ facingMode: "environment" }, config, (text) => {
+          // El método de detención e interacción es el mismo que dominas
+          scanner.stop().then(() => {
+            scanner.clear();
+            readerDiv.style.display = 'none';
+            btnStart.style.display = 'block';
+            btnStart.innerText = "Escanear otro producto";
+            buscarProducto(text);
+          });
           
+          if (navigator.vibrate) navigator.vibrate(100);
+        }).catch(err => {
+          alert("Error de cámara: " + err);
           btnStart.style.display = 'block';
-          btnStart.innerText = "Escanear otro producto";
-          buscarProducto(text);
+          readerDiv.style.display = 'none';
         });
-        
-        if (navigator.vibrate) navigator.vibrate(100);
-      }).catch(err => {
-        alert("Error de cámara: " + err);
-        btnStart.style.display = 'block';
-      });
+      }, 500); 
     }
 
     function buscarManual() {
@@ -373,8 +363,6 @@
       detalle = [];
       actualizarCarrito();
     }
-
-    document.addEventListener("DOMContentLoaded", verificarLibreria);
   </script>
 </body>
 </html>
