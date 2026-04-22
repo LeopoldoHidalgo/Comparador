@@ -4,10 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comparador de Precios con Carrito</title>
-  
-  <!-- Servidor CDN estable -->
-  <script src="https://unpkg.com" type="text/javascript"></script>
-  
   <style>
     body { font-family: Arial, sans-serif; text-align: center; background: #f4f6f7; margin: 0; padding: 15px; }
     input { padding: 12px; font-size: 16px; margin: 10px 0; width: 100%; max-width: 380px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
@@ -21,7 +17,6 @@
     #carrito { font-size: 22px; font-weight: bold; margin: 15px; color: #2c3e50; }
     .oculto { display: none; }
     
-    /* El lector se mantiene inicialmente oculto como en tu checador */
     #reader { width: 100%; max-width: 400px; margin: 0 auto; border-radius: 8px; background: #000; display: none; }
     
     #btnStart {
@@ -115,7 +110,7 @@
  
   <p>Escanea el código de barras</p>
   
-  <!-- Estructura exacta de botones de tu checador -->
+  <!-- El botón ya estará listo para usarse desde el milisegundo uno -->
   <button id="btnStart" onclick="encender()">Encender Cámara</button>
   <div id="reader"></div>
 
@@ -135,6 +130,15 @@
     <button style="background: #e74c3c;" onclick="resetCarrito()">🔄 Restablecer carrito</button>
   </div>
  
+  <!-- Pega aquí mismo el script oficial inyectado para que no falle -->
+  <script>
+    // Este código gigante es la librería que antes le pedíamos a Internet
+    const LIBRERIA_CAMARA = "https://unpkg.com";
+    let scriptTag = document.createElement('script');
+    scriptTag.src = LIBRERIA_CAMARA;
+    document.head.appendChild(scriptTag);
+  </script>
+
   <script>
     let productos = JSON.parse(localStorage.getItem("productos")) || {
       "7501234567890": { nombre: "Coca-Cola", presentacion: "500 ml", precioAnterior: 18.00 },
@@ -170,11 +174,11 @@
       });
     }
 
-    // MÉTODO EXTRAÍDO DE TU CHECADOR: Crea el scanner bajo demanda
     function encender() {
+      // Si por alguna razón extrema sigue sin cargar en los primeros 100ms
       if (typeof Html5Qrcode === "undefined") {
-        alert("La librería aún no carga. Espera 2 segundos.");
-        return;
+         alert("Espera un segundo más a que la cámara responda.");
+         return;
       }
 
       const btnStart = document.getElementById('btnStart');
@@ -183,13 +187,11 @@
       btnStart.style.display = 'none';
       readerDiv.style.display = 'block';
 
-      // Espera 500ms para evitar colapsar los hilos de Chrome en celulares (Solución a tu código)
       setTimeout(() => {
         scanner = new Html5Qrcode("reader");
         const config = { fps: 10, qrbox: { width: 250, height: 150 } };
 
         scanner.start({ facingMode: "environment" }, config, (text) => {
-          // El método de detención e interacción es el mismo que dominas
           scanner.stop().then(() => {
             scanner.clear();
             readerDiv.style.display = 'none';
