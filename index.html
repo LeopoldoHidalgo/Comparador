@@ -32,7 +32,7 @@
     }
     #status { font-size: 14px; color: #7f8c8d; margin-top: 5px; }
 
-    /* 🟢 NUEVO: Estilos para alinear los botones uno sobre otro */
+    /* Estilos para alinear los botones uno sobre otro */
     .botones-container {
       display: flex;
       flex-direction: column;
@@ -89,7 +89,7 @@
  
   <h3>Respaldo de la base</h3>
 
-  <!-- 🟢 NUEVO: Div contenedor para alinear los botones -->
+  <!-- Div contenedor para alinear los botones -->
   <div class="botones-container">
     <button onclick="exportarCSV()">Exportar base a CSV</button>
     <input type="file" id="archivoCSV" accept=".csv">
@@ -132,7 +132,6 @@
       });
     }
 
-    // Monitorea que la librería se cargue en memoria de forma real
     function verificarLibreria() {
       const btnStart = document.getElementById('btnStart');
       const statusText = document.getElementById('status');
@@ -140,11 +139,10 @@
       if (typeof Html5Qrcode !== "undefined") {
         btnStart.disabled = false;
         btnStart.innerText = "Encender Cámara";
-        btnStart.style.background = "#2ecc71"; // Verde llamativo
+        btnStart.style.background = "#2ecc71"; 
         statusText.innerText = "Librería cargada. Listo para escanear.";
         statusText.style.color = "#27ae60";
       } else {
-        // Si no ha cargado, vuelve a verificar en medio segundo
         setTimeout(verificarLibreria, 500);
       }
     }
@@ -160,8 +158,8 @@
       const config = { fps: 10, qrbox: { width: 250, height: 150 } };
 
       scanner.start({ facingMode: "environment" }, config, (text) => {
+        // ↩️ REVERTIDO: Eliminamos scanner.clear() que bloqueaba tu celular
         scanner.stop().then(() => {
-          scanner.clear();
           readerDiv.style.display = 'none';
           btnStart.style.display = 'block';
           btnStart.innerText = "Escanear otro producto";
@@ -278,14 +276,13 @@
       alert("Carrito restablecido.");
     }
 
-    // 🟢 NUEVAS FUNCIONES DE RESPALDO DE BASE DE DATOS
+    // Funciones reales de importación y exportación que pediste
 
     function exportarCSV() {
       let csvContent = "codigo,nombre,presentacion,precioAnterior\n";
       
       for (const codigo in productos) {
         let p = productos[codigo];
-        // Envolvemos en comillas por si el nombre o presentación lleva comas
         csvContent += `"${codigo}","${p.nombre}","${p.presentacion}",${p.precioAnterior}\n`;
       }
 
@@ -303,7 +300,7 @@
 
     function importarCSV() {
       const fileInput = document.getElementById('archivoCSV');
-      const file = fileInput.files[0];
+      const file = fileInput.files;
       
       if (!file) {
         alert("Por favor, selecciona un archivo CSV primero.");
@@ -316,19 +313,17 @@
         const lineas = contenido.split("\n");
         let importados = 0;
 
-        // Saltamos el índice 0 porque son los títulos
         for (let i = 1; i < lineas.length; i++) {
           let linea = lineas[i].trim();
           if (!linea) continue;
 
-          // Separamos por comas y removemos comillas iniciales o finales
           let columnas = linea.split(",").map(val => val.replace(/^"|"$/g, ''));
           
           if (columnas.length >= 4) {
-            let codigo = columnas[0];
-            let nombre = columnas[1];
-            let presentacion = columnas[2];
-            let precioAnterior = parseFloat(columnas[3]);
+            let codigo = columnas;
+            let nombre = columnas;
+            let presentacion = columnas;
+            let precioAnterior = parseFloat(columnas);
 
             if (codigo && nombre && !isNaN(precioAnterior)) {
               productos[codigo] = { nombre, presentacion, precioAnterior };
@@ -340,7 +335,7 @@
         if (importados > 0) {
           guardarLocal();
           alert(`¡Éxito! Se han importado/actualizado ${importados} productos.`);
-          location.reload(); // Recarga para que se reflejen los datos frescos
+          location.reload(); 
         } else {
           alert("No se encontraron registros válidos para importar. Revisa el formato.");
         }
