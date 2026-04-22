@@ -36,7 +36,7 @@
       position: relative;
     }
     
-    /* 🟢 NUEVO: Estilos para la lista desplegable de sugerencias */
+    /* Estilos para la lista desplegable de sugerencias */
     .lista-sugerencias {
       position: absolute;
       top: 100%;
@@ -74,7 +74,7 @@
     .botones-container button { width: 85%; max-width: 350px; }
   </style>
 </head>
-<body>
+<body onload="cargarTodo()">
 
   <h2>Comparador de Precios</h2>
   
@@ -102,10 +102,8 @@
   <div class="simulador-box">
     <p style="margin: 5px; font-size: 16px; font-weight: bold; color: #555;">Escribe el código o el nombre:</p>
     
-    <!-- Al escribir aquí se dispara la función de búsqueda -->
     <input type="text" id="codigoManual" placeholder="Ej: Coca o 7501234..." oninput="filtrarNombres()" autocomplete="off">
     
-    <!-- Lista donde aparecerán las opciones encontradas -->
     <div id="listaSugerencias" class="lista-sugerencias"></div>
     
     <button onclick="buscarManual()">🔍 Buscar / Seleccionar</button>
@@ -125,17 +123,28 @@
   </div>
  
   <script>
-    // Base de datos inicial cargada en LocalStorage
     let productos = JSON.parse(localStorage.getItem("productos")) || {
       "7501234567890": { nombre: "Coca-Cola", presentacion: "500 ml", precioAnterior: 18.00 },
       "7509876543210": { nombre: "Cerveza", presentacion: "1.2 L", precioAnterior: 35.00 }
     };
  
-    let totalCarrito = 0;
-    let detalle = [];
+    // 🟢 NUEVO: Carga las variables desde el almacenamiento local al iniciar
+    let totalCarrito = parseFloat(localStorage.getItem("totalCarrito")) || 0;
+    let detalle = JSON.parse(localStorage.getItem("detalleCarrito")) || [];
  
     function guardarLocal() {
       localStorage.setItem("productos", JSON.stringify(productos));
+    }
+
+    // 🟢 NUEVO: Función para guardar el estado del carrito
+    function guardarCarritoLocal() {
+      localStorage.setItem("totalCarrito", totalCarrito);
+      localStorage.setItem("detalleCarrito", JSON.stringify(detalle));
+    }
+
+    // 🟢 NUEVO: Función que arranca al abrir la página
+    function cargarTodo() {
+      actualizarCarrito();
     }
 
     function toggleLista() {
@@ -159,12 +168,10 @@
       });
     }
 
-    // 🟢 NUEVA FUNCIÓN: Filtra los productos por nombre a medida que escribes
     function filtrarNombres() {
       let input = document.getElementById("codigoManual").value.trim().toLowerCase();
       let listaDiv = document.getElementById("listaSugerencias");
       
-      // Si el campo está vacío, escondemos la lista y no hacemos nada
       if (!input) {
         listaDiv.style.display = "none";
         return;
@@ -175,14 +182,12 @@
 
       for (const codigo in productos) {
         let p = productos[codigo];
-        // Buscamos si el texto escrito coincide con el nombre o con el propio código
         if (p.nombre.toLowerCase().includes(input) || codigo.includes(input)) {
           coincidencias++;
           let item = document.createElement("div");
           item.className = "sugerencia-item";
           item.innerHTML = `<strong>${p.nombre}</strong> - ${p.presentacion} <br><small style="color:#7f8c8d;">Código: ${codigo}</small>`;
           
-          // Al hacer clic sobre el producto, se auto-llena el input y se busca
           item.onclick = function() {
             document.getElementById("codigoManual").value = codigo;
             listaDiv.style.display = "none";
@@ -192,7 +197,6 @@
         }
       }
 
-      // Si encontramos opciones, mostramos la lista flotante
       if (coincidencias > 0) {
         listaDiv.style.display = "block";
       } else {
@@ -203,15 +207,13 @@
     function buscarManual() {
       let input = document.getElementById("codigoManual").value.trim();
       let listaDiv = document.getElementById("listaSugerencias");
-      listaDiv.style.display = "none"; // Ocultamos la lista
+      listaDiv.style.display = "none";
 
       if (!input) {
         alert("Por favor ingresa un código de barras o el nombre del producto.");
         return;
       }
       
-      // Si el usuario le dio a "buscar" con el nombre escrito sin tocar la lista:
-      // Buscamos la primera coincidencia que tenga ese nombre
       let codigoEncontrado = input;
       for (const codigo in productos) {
         if (productos[codigo].nombre.toLowerCase() === input.toLowerCase()) {
@@ -233,7 +235,7 @@
           <h3>${p.nombre} - ${p.presentacion}</h3>
           <p style="font-weight: bold; font-size: 18px;">Precio anterior guardado: $${p.precioAnterior.toFixed(2)}</p>
           <input type="number" id="precioActual" placeholder="Ingresa precio en tienda hoy" step="0.01">
-          <button onclick="comparar('${codigo}')">⚖️ Comparar y Comprar</button>
+          <button onclick="comparar('${codigo}')">⚖️ Comparar</button>
         `;
       } else {
         contenedor.innerHTML = `
@@ -248,15 +250,21 @@
     }
  
     function comparar(codigo) {
-      let inputPrecio = document.getElementById("precioActual").value;
-      let precioActual = parseFloat(inputPrecio);
+      let inputPrecio = document.getElementById("precioActual").value.trim();
+      let p = productos[codigo];
+      let precioActual;
       
-      if (!inputPrecio || isNaN(precioActual) || precioActual < 0) {
+      if (inputPrecio === "") {
+        precioActual = p.precioAnterior;
+      } else {
+        precioActual = parseFloat(inputPrecio);
+      }
+      
+      if (isNaN(precioActual) || precioActual < 0) {
         alert("Por favor ingresa un precio actual válido.");
         return;
       }
  
-      let p = productos[codigo];
       let diferencia = precioActual - p.precioAnterior;
       let porcentaje = ((diferencia / p.precioAnterior) * 100).toFixed(2);
  
@@ -305,7 +313,11 @@
       }
       
       totalCarrito += subtotalSumado;
+      
+      // 🟢 NUEVO: Se guarda el estado después de alterar el carrito
       actualizarCarrito();
+      guardarCarritoLocal();
+      
       alert(`¡Éxito! Agregaste ${cantidad} pieza(s) de ${nombre}.`);
       document.getElementById("resultado").innerHTML = ""; 
     }
@@ -329,7 +341,11 @@
     function resetCarrito() {
       totalCarrito = 0;
       detalle = [];
+      
+      // 🟢 NUEVO: Borra los datos del carrito en el disco local
       actualizarCarrito();
+      guardarCarritoLocal();
+      
       alert("Carrito restablecido.");
     }
 
