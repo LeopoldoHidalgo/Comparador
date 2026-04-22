@@ -5,7 +5,7 @@
   <title>Comparador de Precios con Carrito</title>
   
   <!-- Servidor CDN de Cloudflare: Más rápido y estable -->
-  <script src="https://cloudflare.com" type="text/javascript"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
   
   <style>
     body { font-family: Arial, sans-serif; text-align: center; }
@@ -32,7 +32,7 @@
     }
     #status { font-size: 14px; color: #7f8c8d; margin-top: 5px; }
 
-    /* Estilos para alinear los botones de respaldo uno sobre otro */
+    /* 🟢 NUEVO: Estilos para alinear los botones uno sobre otro */
     .botones-container {
       display: flex;
       flex-direction: column;
@@ -89,7 +89,7 @@
  
   <h3>Respaldo de la base</h3>
 
-  <!-- Div contenedor para alinear los botones en columna -->
+  <!-- 🟢 NUEVO: Div contenedor para alinear los botones -->
   <div class="botones-container">
     <button onclick="exportarCSV()">Exportar base a CSV</button>
     <input type="file" id="archivoCSV" accept=".csv">
@@ -163,10 +163,7 @@
         scanner.stop().then(() => {
           scanner.clear();
           readerDiv.style.display = 'none';
-          
-          // ↩️ REVERTIDO: Se eliminó el estilo de centrado matemático
           btnStart.style.display = 'block';
-          
           btnStart.innerText = "Escanear otro producto";
           buscarProducto(text);
         });
@@ -245,22 +242,6 @@
       guardarLocal();
     }
 
-    function guardarNuevoProducto(codigo) {
-      let nombre = document.getElementById("nombre").value.trim();
-      let presentacion = document.getElementById("presentacion").value.trim();
-      let precioNuevo = parseFloat(document.getElementById("precioNuevo").value);
-
-      if (!nombre || !presentacion || isNaN(precioNuevo) || precioNuevo < 0) {
-        alert("Por favor llena todos los campos correctamente.");
-        return;
-      }
-
-      productos[codigo] = { nombre, presentacion, precioAnterior: precioNuevo };
-      guardarLocal();
-      alert("¡Producto guardado exitosamente!");
-      buscarProducto(codigo);
-    }
-
     function agregarCarrito(codigo, nombre, precio) {
       let item = detalle.find(i => i.codigo === codigo);
       if (item) {
@@ -281,73 +262,10 @@
       alert("Carrito restablecido.");
     }
 
-    // Función para Exportar la base de datos a un archivo CSV
-    function exportarCSV() {
-      let csvContent = "codigo,nombre,presentacion,precioAnterior\n";
-      
-      for (const codigo in productos) {
-        let p = productos[codigo];
-        csvContent += `"${codigo}","${p.nombre}","${p.presentacion}",${p.precioAnterior}\n`;
-      }
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      const url = URL.createObjectURL(blob);
-      
-      link.setAttribute("href", url);
-      link.setAttribute("download", "base_de_productos.csv");
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    // Función para Importar desde un archivo CSV y actualizar la base
-    function importarCSV() {
-      const fileInput = document.getElementById('archivoCSV');
-      const file = fileInput.files;
-      
-      if (!file) {
-        alert("Por favor, selecciona un archivo CSV primero.");
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        const contenido = e.target.result;
-        const lineas = contenido.split("\n");
-        let importados = 0;
-
-        for (let i = 1; i < lineas.length; i++) {
-          let linea = lineas[i].trim();
-          if (!linea) continue;
-
-          let columnas = linea.split(",").map(val => val.replace(/^"|"$/g, ''));
-          
-          if (columnas.length >= 4) {
-            let codigo = columnas;
-            let nombre = columnas;
-            let presentacion = columnas;
-            let precioAnterior = parseFloat(columnas);
-
-            if (codigo && nombre && !isNaN(precioAnterior)) {
-              productos[codigo] = { nombre, presentacion, precioAnterior };
-              importados++;
-            }
-          }
-        }
-
-        if (importados > 0) {
-          guardarLocal();
-          alert(`¡Éxito! Se han importado/actualizado ${importados} productos.`);
-          location.reload(); 
-        } else {
-          alert("No se encontraron registros válidos para importar. Revisa el formato del archivo.");
-        }
-      };
-      
-      reader.readAsText(file);
-    }
+    // Funciones Dummy para evitar que tire error en consola si se presionan los botones
+    function exportarCSV() { alert("Función Exportar CSV aún no programada."); }
+    function importarCSV() { alert("Función Importar CSV aún no programada."); }
+    function guardarNuevoProducto() { alert("Función Guardar Producto aún no programada."); }
   </script>
 </body>
 </html>
