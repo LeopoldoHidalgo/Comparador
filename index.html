@@ -95,7 +95,7 @@
       <thead>
         <tr>
           <th>Producto</th>
-          <th>Tienda</th>
+          <!-- ❌ Tienda eliminada de la vista -->
           <th>Cant.</th>
           <th>Precio</th>
           <th>Subtotal</th>
@@ -165,7 +165,7 @@
         tbody.innerHTML += `
           <tr>
             <td>${item.nombre}</td>
-            <td>${item.tienda || 'N/A'}</td>
+            <!-- ❌ Fila de tienda eliminada de la vista -->
             <td>${item.cantidad}</td>
             <td>$${item.precio.toFixed(2)}</td>
             <td>$${item.subtotal.toFixed(2)}</td>
@@ -252,7 +252,6 @@
           <h3>${p.nombre} - ${p.presentacion}</h3>
           <p style="font-weight: bold; font-size: 16px;">Precio guardado: $${p.precioAnterior.toFixed(2)} (${p.tienda || 'Sin tienda'})</p>
           
-          <!-- 🟢 NUEVO: Lista desplegable de tiendas en comparación -->
           <select id="tiendaActual">
             <option value="Aurrera">Aurrera</option>
             <option value="Walmart">Walmart</option>
@@ -272,7 +271,6 @@
           <input type="text" id="nombre" placeholder="Nombre (Ej: Leche)"><br>
           <input type="text" id="presentacion" placeholder="Presentación (Ej: 1 Litro)"><br>
           
-          <!-- 🟢 NUEVO: Lista desplegable de tiendas al registrar nuevo producto -->
           <select id="tiendaNueva">
             <option value="Aurrera">Aurrera</option>
             <option value="Walmart">Walmart</option>
@@ -298,7 +296,7 @@
  
     function comparar(codigo) {
       let inputPrecio = document.getElementById("precioActual").value.trim();
-      let inputTienda = document.getElementById("tiendaActual").value; // Toma el valor del select
+      let inputTienda = document.getElementById("tiendaActual").value;
       let p = productos[codigo];
       let precioActual;
       
@@ -373,7 +371,7 @@
     function guardarNuevoProducto(codigo) {
       let nombre = document.getElementById("nombre").value.trim();
       let presentacion = document.getElementById("presentacion").value.trim();
-      let tiendaNueva = document.getElementById("tiendaNueva").value; // Toma el valor del select
+      let tiendaNueva = document.getElementById("tiendaNueva").value;
       let precioNuevo = parseFloat(document.getElementById("precioNuevo").value);
 
       if (!nombre || !presentacion || isNaN(precioNuevo) || precioNuevo < 0) {
