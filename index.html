@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <!-- 📱 LÍNEA NUEVA: Vital para que el celular no reduzca la escala de la página -->
+  <!-- 📱 Importante para que el celular no reduzca la escala de la página -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comparador de Precios con Carrito</title>
   
@@ -22,7 +22,7 @@
       box-sizing: border-box; 
     }
     
-    /* 🎯 BOTONES MÁS GRANDES Y RESPONSIVOS */
+    /* Botones grandes y responsivos */
     button { 
       padding: 15px 30px; 
       font-size: 18px; 
@@ -32,9 +32,9 @@
       border-radius: 8px; 
       margin: 8px auto; 
       cursor: pointer; 
-      width: 80%; /* Ocupa el 80% del ancho de cualquier pantalla */
-      max-width: 350px; /* Evita que se deforme en computadoras */
-      display: block; /* Se apilan uno sobre otro */
+      width: 80%; 
+      max-width: 350px; 
+      display: block; 
       font-weight: bold;
     }
     button:hover { background: #2980b9; }
@@ -59,7 +59,6 @@
       box-sizing: border-box;
     }
     
-    /* Botón interno de la caja manual adaptado */
     .manual-box button {
       width: 100%;
       margin-top: 10px;
@@ -85,7 +84,7 @@
     }
     
     .botones-container button {
-      width: 100%; /* Toma el ancho máximo definido en el estilo general */
+      width: 100%;
     }
   </style>
 </head>
@@ -112,7 +111,6 @@
  
   <p style="font-size: 18px; font-weight: bold;">Escanea el código de barras</p>
   
-  <!-- El botón inicia bloqueado y cambia de color hasta que la librería responda -->
   <button id="btnStart" onclick="encender()" disabled>⏳ Cargando cámara...</button>
   <div id="status">Por favor, espera a que el botón se active</div>
   
@@ -128,7 +126,6 @@
  
   <h3>Respaldo de la base</h3>
 
-  <!-- Div contenedor para alinear los botones -->
   <div class="botones-container">
     <button onclick="exportarCSV()">Exportar base a CSV</button>
     <input type="file" id="archivoCSV" accept=".csv">
@@ -186,6 +183,7 @@
       }
     }
 
+    // ⚡ FUNCIÓN CORREGIDA: Apaga la cámara forzosamente de raíz
     function encender() {
       const btnStart = document.getElementById('btnStart');
       const readerDiv = document.getElementById('reader');
@@ -193,15 +191,31 @@
       btnStart.style.display = 'none';
       readerDiv.style.display = 'block';
 
+      // Si por alguna razón había una instancia previa, la destruimos
+      if (scanner !== null) {
+         try { scanner.clear(); } catch(e) {}
+      }
+
       scanner = new Html5Qrcode("reader");
       const config = { fps: 10, qrbox: { width: 250, height: 150 } };
 
       scanner.start({ facingMode: "environment" }, config, (text) => {
+        // En lugar de scanner.clear(), usamos scanner.stop() para liberar el hardware del teléfono
         scanner.stop().then(() => {
-          scanner.clear();
           readerDiv.style.display = 'none';
           btnStart.style.display = 'block';
           btnStart.innerText = "Escanear otro producto";
+          
+          // Matamos la instancia para que el próximo encendido empiece de cero
+          scanner = null; 
+          
+          buscarProducto(text);
+        }).catch(err => {
+          console.error("Error al intentar detener la cámara: ", err);
+          // Si el stop falla, al menos ocultamos y limpiamos el DOM
+          readerDiv.style.display = 'none';
+          btnStart.style.display = 'block';
+          scanner = null;
           buscarProducto(text);
         });
         
