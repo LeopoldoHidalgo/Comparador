@@ -2,12 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <!-- Línea crucial para que el celular no reduzca el tamaño del contenido -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comparador de Precios con Carrito</title>
   
-  <!-- Servidor CDN de Cloudflare: Más rápido y estable -->
-  <script src="https://cloudflare.com" type="text/javascript"></script>
+  <!-- Servidor CDN UNPKG: El más estable para esta librería -->
+  <script src="https://unpkg.com" type="text/javascript"></script>
   
   <style>
     body { font-family: Arial, sans-serif; text-align: center; background: #f4f6f7; margin: 0; padding: 15px; }
@@ -32,6 +31,7 @@
       font-size: 18px;
     }
 
+    /* Caja manual centrada */
     .manual-box {
       margin: 15px auto;
       padding: 15px;
@@ -42,11 +42,21 @@
       background: #fff;
       box-sizing: border-box;
       display: inline-block;
+      text-align: center; /* Centra el contenido interior */
     }
 
-    #status { font-size: 14px; color: #7f8c8d; margin-top: 5px; }
+    /* Texto "Escribe el código a mano" centrado */
+    .manual-box p {
+      margin: 5px 0;
+      font-size: 14px; 
+      color: #555;
+      text-align: center;
+      width: 100%;
+    }
 
-    /* NUEVA SECCIÓN: Caja gris para el respaldo de la base */
+    #status { font-size: 14px; color: #7f8c8d; margin-top: 5px; text-align: center; }
+
+    /* Caja gris para el respaldo de la base */
     .seccion-respaldo {
       display: flex;
       flex-direction: column;
@@ -56,13 +66,12 @@
       max-width: 380px;
       margin: 20px auto;
       padding: 20px;
-      background: #eaeded; /* Fondo gris suave */
+      background: #eaeded; 
       border-radius: 12px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.05); /* Sombra ligera */
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05); 
       box-sizing: border-box;
     }
 
-    /* Homologamos el tamaño de todos los controles en esta sección */
     .seccion-respaldo button, 
     .seccion-respaldo input[type="file"] {
       width: 100%;
@@ -71,7 +80,6 @@
       font-size: 15px;
     }
 
-    /* Espaciador específico para el botón de archivo */
     .seccion-respaldo input[type="file"] {
       background: #fff;
       padding: 10px;
@@ -79,12 +87,12 @@
       border: 1px solid #bdc3c7;
     }
 
-    /* Estilos del área de resultados en móviles */
     #resultado {
       width: 100%;
       max-width: 380px;
       margin: 15px auto;
       box-sizing: border-box;
+      text-align: center;
     }
   </style>
 </head>
@@ -117,16 +125,15 @@
   <div id="reader"></div>
 
   <div class="manual-box">
-    <p style="margin: 5px; font-size: 14px; color: #555;">Si la cámara falla, ingresa el código aquí:</p>
+    <p>Si la cámara falla, ingresa el código aquí:</p>
     <input type="text" id="codigoManual" placeholder="Escribe el código a mano">
-    <button onclick="buscarManual()">Buscar manual</button>
+    <button onclick="buscarManual()" style="width: 100%; margin-top: 5px;">Buscar manual</button>
   </div>
 
   <div id="resultado"></div>
  
-  <!-- Sección de respaldo de la base modificada con fondo gris -->
   <div class="seccion-respaldo">
-    <h3 style="margin-top: 0; color: #2c3e50;">💾 Respaldo de la base</h3>
+    <h3 style="margin-top: 0; color: #2c3e50; text-align: center;">💾 Respaldo de la base</h3>
     <button onclick="exportarCSV()">Exportar base a CSV</button>
     <input type="file" id="archivoCSV" accept=".csv">
     <button onclick="importarCSV()">Importar base desde CSV</button>
