@@ -2,8 +2,6 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <!-- 📱 LÍNEA NUEVA: Le avisa al celular que no reduzca la escala de la página -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comparador de Precios con Carrito</title>
   
   <!-- Servidor CDN de Cloudflare: Más rápido y estable -->
@@ -49,37 +47,6 @@
     }
     .botones-container button {
       width: 250px; /* Ancho uniforme para que se vean ordenados */
-    }
-
-    /* 🟢 NUEVO: Solo si la pantalla es de un celular (menos de 600px de ancho) */
-    @media (max-width: 600px) {
-      input {
-        width: 85%;
-        padding: 15px;
-        font-size: 18px;
-      }
-      
-      button {
-        width: 85% !important; /* Forza el ancho en celulares */
-        padding: 15px 10px;
-        font-size: 18px;
-        margin: 10px auto;
-        display: block; /* Los apila uno sobre otro */
-      }
-      
-      .botones-container button {
-        width: 85% !important; /* Iguala el tamaño de los botones de respaldo */
-      }
-      
-      .botones-container input[type="file"] {
-        width: 85%;
-        padding: 10px;
-      }
-      
-      table {
-        width: 98%;
-        font-size: 14px; /* Reduce un poco la letra para que quepa en pantalla */
-      }
     }
   </style>
 </head>
