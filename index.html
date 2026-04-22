@@ -164,10 +164,8 @@
           scanner.clear();
           readerDiv.style.display = 'none';
           
-          // 🎯 CORRECCIÓN: Forzamos el centrado matemático al reaparecer el botón
+          // ↩️ REVERTIDO: Se eliminó el estilo de centrado matemático
           btnStart.style.display = 'block';
-          btnStart.style.margin = '15px auto';
-          btnStart.style.textAlign = 'center';
           
           btnStart.innerText = "Escanear otro producto";
           buscarProducto(text);
@@ -177,7 +175,6 @@
       }).catch(err => {
         alert("Error de cámara: " + err);
         btnStart.style.display = 'block';
-        btnStart.style.margin = '15px auto';
       });
     }
 
@@ -290,7 +287,6 @@
       
       for (const codigo in productos) {
         let p = productos[codigo];
-        // Envolvemos los textos en comillas por seguridad
         csvContent += `"${codigo}","${p.nombre}","${p.presentacion}",${p.precioAnterior}\n`;
       }
 
@@ -309,7 +305,7 @@
     // Función para Importar desde un archivo CSV y actualizar la base
     function importarCSV() {
       const fileInput = document.getElementById('archivoCSV');
-      const file = fileInput.files[0];
+      const file = fileInput.files;
       
       if (!file) {
         alert("Por favor, selecciona un archivo CSV primero.");
@@ -329,10 +325,10 @@
           let columnas = linea.split(",").map(val => val.replace(/^"|"$/g, ''));
           
           if (columnas.length >= 4) {
-            let codigo = columnas[0];
-            let nombre = columnas[1];
-            let presentacion = columnas[2];
-            let precioAnterior = parseFloat(columnas[3]);
+            let codigo = columnas;
+            let nombre = columnas;
+            let presentacion = columnas;
+            let precioAnterior = parseFloat(columnas);
 
             if (codigo && nombre && !isNaN(precioAnterior)) {
               productos[codigo] = { nombre, presentacion, precioAnterior };
