@@ -426,9 +426,9 @@
       document.body.removeChild(link);
     }
 
-    function importarCSV() {
+        function importarCSV() {
       const fileInput = document.getElementById('archivoCSV');
-      const file = fileInput.files;
+      const file = fileInput.files[0]; // ⚡ Corregido para capturar el archivo
       
       if (!file) {
         alert("Por favor, selecciona un archivo CSV primero.");
@@ -448,18 +448,24 @@
             continue;
           }
           
-          let columnas = linea.split(",").map(val => val.replace(/^"|"$/g, ''));
+          // ⚡ EXPRESIÓN REGULAR AVANZADA: Separa por comas pero ignora las que están dentro de comillas
+          let columnas = linea.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
           
-          if (columnas.length >= 4) {
-            let codigo = columnas[0];
-            let nombre = columnas[1];
-            let presentacion = columnas[2];
-            let precioAnterior = parseFloat(columnas[3]);
-            let tienda = columnas[4] || "Desconocida";
+          if (columnas) {
+            // Limpiamos las comillas dobles sobrantes de los extremos
+            columnas = columnas.map(val => val.replace(/^"|"$/g, ''));
+            
+            if (columnas.length >= 4) {
+              let codigo = columnas[0];
+              let nombre = columnas[1];
+              let presentacion = columnas[2];
+              let precioAnterior = parseFloat(columnas[3]);
+              let tienda = columnas[4] || "Desconocida";
 
-            if (codigo && nombre && !isNaN(precioAnterior)) {
-              productos[codigo] = { nombre, presentacion, precioAnterior, tienda };
-              importados++;
+              if (codigo && nombre && !isNaN(precioAnterior)) {
+                productos[codigo] = { nombre, presentacion, precioAnterior, tienda };
+                importados++;
+              }
             }
           }
         }
@@ -469,11 +475,12 @@
           alert(`¡Éxito! Se han importado/actualizado ${importados} productos.`);
           location.reload(); 
         } else {
-          alert("No se encontraron registros válidos.");
+          alert("No se encontraron registros válidos en el archivo.");
         }
       };
       reader.readAsText(file);
     }
+
 
     // 📷 FUNCIONES DE LA CÁMARA
     function toggleCamara() {
