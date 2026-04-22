@@ -2,7 +2,9 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Comparador de Precios con Cámara</title>
+  <title>Comparador de Precios con Carrito</title>
+  <!-- Biblioteca externa para leer códigos de barras -->
+  <script src="https://unpkg.com" type="text/javascript"></script>
   <style>
     body { font-family: Arial, sans-serif; text-align: center; }
     input { padding: 10px; font-size: 16px; margin: 10px; width: 250px; }
@@ -14,16 +16,8 @@
     #carrito { font-size: 20px; font-weight: bold; margin: 15px; color: #2c3e50; }
     .oculto { display: none; }
     
-    /* Contenedor del lector adaptado */
-    #lector-camara {
-      width: 100%;
-      max-width: 500px;
-      margin: 20px auto;
-      border: 3px solid #3498db;
-      border-radius: 8px;
-      overflow: hidden;
-      background: #f8f9fa;
-    }
+    /* Estilos heredados del checador para la cámara */
+    #reader { width: 100%; max-width: 400px; margin: 0 auto; border-radius: 8px; background: #000; display: none; }
     .manual-box {
       margin: 15px auto;
       padding: 10px;
@@ -34,23 +28,7 @@
       background: #f8f9fa;
       box-sizing: border-box;
     }
-    
-    /* Pequeño ajuste para que los botones de la librería se vean mejor */
-    #lector-camara button {
-      background-color: #2ecc71 !important;
-      color: white !important;
-      padding: 8px 12px !important;
-      margin: 10px !important;
-    }
-    #lector-camara select {
-      padding: 8px;
-      margin: 10px;
-      font-size: 16px;
-    }
   </style>
-  
-  <!-- Biblioteca externa para leer códigos de barras -->
-  <script src="https://unpkg.com" type="text/javascript"></script>
 </head>
 <body>
   <h2>Comparador de Precios</h2>
@@ -73,11 +51,12 @@
     </table>
   </div>
  
-  <h3>Escanea el código de barras</h3>
+  <p>Escanea el código de barras</p>
   
-  <!-- Contenedor donde se dibuja el escáner oficial -->
-  <div id="lector-camara"></div>
-  
+  <!-- Estructura de encendido del checador -->
+  <button id="btnStart" onclick="encender()">Encender Cámara</button>
+  <div id="reader"></div>
+
   <div class="manual-box">
     <p style="margin: 5px; font-size: 14px; color: #555;">Si la cámara no enciende o falla, escribe aquí:</p>
     <input type="text" id="codigoManual" placeholder="Escribe el código a mano">
@@ -101,8 +80,7 @@
  
     let totalCarrito = 0;
     let detalle = [];
-    let escaneando = true;
-    let html5QrcodeScanner; // Variable para controlar el escáner visual
+    let scanner = null; // Variable para la cámara
  
     function guardarLocal() {
       localStorage.setItem("productos", JSON.stringify(productos));
@@ -128,54 +106,75 @@
         `;
       });
     }
- 
+
+    // NUEVA FUNCIÓN: Lógica de encendido extraída de tu checador funcional
+    function encender() {
+      if (typeof Html5Qrcode === "undefined") {
+        alert("La librería aún no carga. Espera 2 segundos.");
+        return;
+      }
+
+      const btnStart = document.getElementById('btnStart');
+      const readerDiv = document.getElementById('reader');
+
+      btnStart.style.display = 'none';
+      readerDiv.style.display = 'block';
+
+      scanner = new Html5Qrcode("reader");
+      const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+
+      scanner.start({ facingMode: "environment" }, config, (text) => {
+        // Al encontrar el código, apagamos la cámara y mostramos los datos (como en tu checador)
+        scanner.stop().then(() => {
+          scanner.clear();
+          readerDiv.style.display = 'none';
+          btnStart.style.display = 'block';
+          btnStart.innerText = "Escanear otro producto";
+          buscarProducto(text);
+        });
+        
+        if (navigator.vibrate) navigator.vibrate(100);
+      }).catch(err => {
+        alert("Error de cámara: " + err);
+        btnStart.style.display = 'block';
+      });
+    }
+
     function buscarManual() {
       let codigo = document.getElementById("codigoManual").value.trim();
       if (!codigo) {
         alert("Por favor ingresa un código de barras.");
         return;
       }
-      procesarCodigo(codigo);
+      buscarProducto(codigo);
       document.getElementById("codigoManual").value = ""; 
     }
-
-    function procesarCodigo(codigo) {
-      if (!escaneando) return; 
-      escaneando = false; 
-      
+ 
+    // Regresamos a tu función original de búsqueda de datos
+    function buscarProducto(codigo) {
       let contenedor = document.getElementById("resultado");
  
       if (productos[codigo]) {
         let p = productos[codigo];
         contenedor.innerHTML = `
-          <div style="background: #fdfefe; padding: 15px; border: 1px solid #ddd; margin: 10px auto; width: 90%; max-width: 400px; border-radius: 5px; box-sizing: border-box;">
-            <h3>${p.nombre} - ${p.presentacion}</h3>
-            <p>Precio anterior: $${p.precioAnterior.toFixed(2)}</p>
-            <input type="number" id="precioActual" placeholder="Ingresa precio actual" step="0.01">
-            <button onclick="comparar('${codigo}')">Comparar</button>
-            <button style="background:#e74c3c" onclick="reanudarEscaneo()">Omitir</button>
-          </div>
+          <h3>${p.nombre} - ${p.presentacion}</h3>
+          <p>Precio anterior: $${p.precioAnterior.toFixed(2)}</p>
+          <input type="number" id="precioActual" placeholder="Ingresa precio actual" step="0.01">
+          <button onclick="comparar('${codigo}')">Comparar</button>
         `;
       } else {
         contenedor.innerHTML = `
-          <div style="background: #fdfefe; padding: 15px; border: 1px solid #ddd; margin: 10px auto; width: 90%; max-width: 400px; border-radius: 5px; box-sizing: border-box;">
-            <h3>Producto no registrado (${codigo})</h3>
-            <p>Ingresa los datos para guardarlo en la base de datos:</p>
-            <input type="text" id="nombre" placeholder="Nombre"><br>
-            <input type="text" id="presentacion" placeholder="Presentación"><br>
-            <input type="number" id="precioNuevo" placeholder="Precio actual" step="0.01"><br>
-            <button onclick="guardarNuevoProducto('${codigo}')">Guardar en la base de datos</button>
-            <button style="background:#e74c3c" onclick="reanudarEscaneo()">Cancelar</button>
-          </div>
+          <h3>Producto no registrado (${codigo})</h3>
+          <p>Ingresa los datos para guardarlo en la base de datos:</p>
+          <input type="text" id="nombre" placeholder="Nombre"><br>
+          <input type="text" id="presentacion" placeholder="Presentación"><br>
+          <input type="number" id="precioNuevo" placeholder="Precio actual" step="0.01"><br>
+          <button onclick="guardarNuevoProducto('${codigo}')">Guardar en la base de datos</button>
         `;
       }
     }
-    
-    function reanudarEscaneo() {
-      document.getElementById("resultado").innerHTML = "";
-      escaneando = true; 
-    }
  
+    // Regresamos a tu función original de comparar (con tablas y porcentajes)
     function comparar(codigo) {
       let inputPrecio = document.getElementById("precioActual").value;
       let precioActual = parseFloat(inputPrecio);
@@ -190,22 +189,20 @@
       let porcentaje = ((diferencia / p.precioAnterior) * 100).toFixed(2);
  
       document.getElementById("resultado").innerHTML = `
-        <div style="background: #fdfefe; padding: 15px; border: 1px solid #ddd; margin: 10px auto; width: 90%; max-width: 400px; border-radius: 5px; box-sizing: border-box;">
-          <h3>${p.nombre} - ${p.presentacion}</h3>
-          <table>
-            <tr>
-              <th>Anterior</th>
-              <th>Actual</th>
-            </tr>
-            <tr>
-              <td>$${p.precioAnterior.toFixed(2)}</td>
-              <td>$${precioActual.toFixed(2)}</td>
-            </tr>
-          </table>
-          <p>Diferencia: $${diferencia.toFixed(2)} (${porcentaje}%)</p>
-          <button onclick="agregarCarrito('${codigo}', '${p.nombre}', ${precioActual})">➕ Agregar al carrito</button>
-          <button style="background:#2ecc71" onclick="reanudarEscaneo()">Terminar / Siguiente</button>
-        </div>
+        <h3>${p.nombre} - ${p.presentacion}</h3>
+        <table>
+          <tr>
+            <th>Precio anterior</th>
+            <th>Precio actual</th>
+            <th>Diferencia</th>
+          </tr>
+          <tr>
+            <td>$${p.precioAnterior.toFixed(2)}</td>
+            <td>$${precioActual.toFixed(2)}</td>
+            <td>$${diferencia.toFixed(2)} (${porcentaje}%)</td>
+          </tr>
+        </table>
+        <button onclick="agregarCarrito('${codigo}', '${p.nombre}', ${precioActual})">➕ Agregar al carrito</button>
       `;
  
       productos[codigo].precioAnterior = precioActual;
@@ -244,7 +241,6 @@
           <h3>${nombre} - ${presentacion}</h3>
           <p>Precio registrado: $${precioActual.toFixed(2)}</p>
           <button onclick="agregarCarrito('${codigo}', '${nombre}', ${precioActual})">➕ Agregar al carrito</button>
-          <button style="background:#2ecc71" onclick="reanudarEscaneo()">Terminar / Siguiente</button>
         </div>
       `;
     }
@@ -265,7 +261,7 @@
  
     function importarCSV() {
       let archivo = document.getElementById("archivoCSV").files;
-      if (!archivo) { alert("Selecciona un archivo CSV."); return; }
+      if (!archivo) { alert("Selecciona un archivo CSV primero."); return; }
       let lector = new FileReader();
       lector.onload = function(e) {
         let lineas = e.target.result.split("\n");
@@ -284,7 +280,7 @@
           }
         }
         guardarLocal();
-        alert(`Base importada. Se actualizaron ${importados} productos.`);
+        alert(`Base importada correctamente. Se actualizaron ${importados} productos.`);
       };
       lector.readAsText(archivo);
     }
@@ -294,25 +290,6 @@
       detalle = [];
       actualizarCarrito();
     }
-
-    // INICIALIZADOR DE INTERFAZ DE LA LIBRERÍA
-    document.addEventListener("DOMContentLoaded", () => {
-      // Usamos el constructor visual por defecto
-      html5QrcodeScanner = new Html5QrcodeScanner(
-        "lector-camara", 
-        { 
-          fps: 10, 
-          qrbox: { width: 250, height: 125 },
-          rememberLastUsedCamera: true // Recuerda tu cámara si vuelves a entrar
-        },
-        /* verbose= */ false
-      );
-      
-      html5QrcodeScanner.render(
-        (decodedText) => { procesarCodigo(decodedText); }, // Éxito
-        (errorMessage) => { /* Silenciar errores constantes de enfoque */ }
-      );
-    });
   </script>
 </body>
 </html>
