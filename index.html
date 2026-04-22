@@ -14,29 +14,42 @@
     #carrito { font-size: 20px; font-weight: bold; margin: 15px; color: #2c3e50; }
     .oculto { display: none; }
     
-    /* Diseño del contenedor de la cámara */
+    /* Contenedor del lector adaptado */
     #lector-camara {
-      width: 400px;
-      max-width: 90%;
+      width: 100%;
+      max-width: 500px;
       margin: 20px auto;
       border: 3px solid #3498db;
       border-radius: 8px;
       overflow: hidden;
+      background: #f8f9fa;
     }
-
-    /* Caja para la captura manual */
     .manual-box {
       margin: 15px auto;
       padding: 10px;
-      width: 380px;
-      max-width: 85%;
+      width: 100%;
+      max-width: 380px;
       border: 1px dashed #7f8c8d;
       border-radius: 5px;
       background: #f8f9fa;
+      box-sizing: border-box;
+    }
+    
+    /* Pequeño ajuste para que los botones de la librería se vean mejor */
+    #lector-camara button {
+      background-color: #2ecc71 !important;
+      color: white !important;
+      padding: 8px 12px !important;
+      margin: 10px !important;
+    }
+    #lector-camara select {
+      padding: 8px;
+      margin: 10px;
+      font-size: 16px;
     }
   </style>
   
-  <!-- Biblioteca externa para leer códigos de barras con la cámara -->
+  <!-- Biblioteca externa para leer códigos de barras -->
   <script src="https://unpkg.com" type="text/javascript"></script>
 </head>
 <body>
@@ -61,11 +74,12 @@
   </div>
  
   <h3>Escanea el código de barras</h3>
+  
+  <!-- Contenedor donde se dibuja el escáner oficial -->
   <div id="lector-camara"></div>
   
-  <!-- CUADRO DE TEXTO MANUAL (Alternativa híbrida) -->
   <div class="manual-box">
-    <p style="margin: 5px; font-size: 14px; color: #555;">Si la cámara falla, ingresa el código aquí:</p>
+    <p style="margin: 5px; font-size: 14px; color: #555;">Si la cámara no enciende o falla, escribe aquí:</p>
     <input type="text" id="codigoManual" placeholder="Escribe el código a mano">
     <button onclick="buscarManual()">Buscar manual</button>
   </div>
@@ -87,7 +101,8 @@
  
     let totalCarrito = 0;
     let detalle = [];
-    let escaneando = true; // Controla que no se repitan lecturas de cámara continuas
+    let escaneando = true;
+    let html5QrcodeScanner; // Variable para controlar el escáner visual
  
     function guardarLocal() {
       localStorage.setItem("productos", JSON.stringify(productos));
@@ -114,7 +129,6 @@
       });
     }
  
-    // Captura el código del botón manual
     function buscarManual() {
       let codigo = document.getElementById("codigoManual").value.trim();
       if (!codigo) {
@@ -122,20 +136,19 @@
         return;
       }
       procesarCodigo(codigo);
-      document.getElementById("codigoManual").value = ""; // Limpia la caja de texto
+      document.getElementById("codigoManual").value = ""; 
     }
 
-    // Procesa el código (venga de la cámara o de la caja de texto)
     function procesarCodigo(codigo) {
       if (!escaneando) return; 
-      escaneando = false; // Pausa el escáner mientras el usuario interactúa
+      escaneando = false; 
       
       let contenedor = document.getElementById("resultado");
  
       if (productos[codigo]) {
         let p = productos[codigo];
         contenedor.innerHTML = `
-          <div style="background: #fdfefe; padding: 15px; border: 1px solid #ddd; margin: 10px auto; width: 60%; border-radius: 5px;">
+          <div style="background: #fdfefe; padding: 15px; border: 1px solid #ddd; margin: 10px auto; width: 90%; max-width: 400px; border-radius: 5px; box-sizing: border-box;">
             <h3>${p.nombre} - ${p.presentacion}</h3>
             <p>Precio anterior: $${p.precioAnterior.toFixed(2)}</p>
             <input type="number" id="precioActual" placeholder="Ingresa precio actual" step="0.01">
@@ -145,7 +158,7 @@
         `;
       } else {
         contenedor.innerHTML = `
-          <div style="background: #fdfefe; padding: 15px; border: 1px solid #ddd; margin: 10px auto; width: 60%; border-radius: 5px;">
+          <div style="background: #fdfefe; padding: 15px; border: 1px solid #ddd; margin: 10px auto; width: 90%; max-width: 400px; border-radius: 5px; box-sizing: border-box;">
             <h3>Producto no registrado (${codigo})</h3>
             <p>Ingresa los datos para guardarlo en la base de datos:</p>
             <input type="text" id="nombre" placeholder="Nombre"><br>
@@ -160,7 +173,7 @@
     
     function reanudarEscaneo() {
       document.getElementById("resultado").innerHTML = "";
-      escaneando = true; // Permite a la cámara leer de nuevo
+      escaneando = true; 
     }
  
     function comparar(codigo) {
@@ -177,20 +190,19 @@
       let porcentaje = ((diferencia / p.precioAnterior) * 100).toFixed(2);
  
       document.getElementById("resultado").innerHTML = `
-        <div style="background: #fdfefe; padding: 15px; border: 1px solid #ddd; margin: 10px auto; width: 60%; border-radius: 5px;">
+        <div style="background: #fdfefe; padding: 15px; border: 1px solid #ddd; margin: 10px auto; width: 90%; max-width: 400px; border-radius: 5px; box-sizing: border-box;">
           <h3>${p.nombre} - ${p.presentacion}</h3>
           <table>
             <tr>
-              <th>Precio anterior</th>
-              <th>Precio actual</th>
-              <th>Diferencia</th>
+              <th>Anterior</th>
+              <th>Actual</th>
             </tr>
             <tr>
               <td>$${p.precioAnterior.toFixed(2)}</td>
               <td>$${precioActual.toFixed(2)}</td>
-              <td>$${diferencia.toFixed(2)} (${porcentaje}%)</td>
             </tr>
           </table>
+          <p>Diferencia: $${diferencia.toFixed(2)} (${porcentaje}%)</p>
           <button onclick="agregarCarrito('${codigo}', '${p.nombre}', ${precioActual})">➕ Agregar al carrito</button>
           <button style="background:#2ecc71" onclick="reanudarEscaneo()">Terminar / Siguiente</button>
         </div>
@@ -227,8 +239,8 @@
       guardarLocal();
  
       document.getElementById("resultado").innerHTML = `
-        <div style="background: #e8f4f8; padding: 15px; border-radius: 5px; margin: 10px auto; width: 60%;">
-          <p style="color: #27ae60; font-weight: bold;">✔ Producto guardado con éxito en la base de datos.</p>
+        <div style="background: #e8f4f8; padding: 15px; border-radius: 5px; margin: 10px auto; width: 90%; max-width: 400px; box-sizing: border-box;">
+          <p style="color: #27ae60; font-weight: bold;">✔ Producto guardado con éxito.</p>
           <h3>${nombre} - ${presentacion}</h3>
           <p>Precio registrado: $${precioActual.toFixed(2)}</p>
           <button onclick="agregarCarrito('${codigo}', '${nombre}', ${precioActual})">➕ Agregar al carrito</button>
@@ -238,19 +250,12 @@
     }
  
     function exportarCSV() {
-      if (Object.keys(productos).length === 0) {
-        alert("No hay productos para exportar.");
-        return;
-      }
- 
+      if (Object.keys(productos).length === 0) { alert("No hay productos."); return; }
       let csv = "Codigo,Nombre,Presentacion,PrecioAnterior\n";
       for (let codigo in productos) {
         let p = productos[codigo];
-        let nombreSeguro = p.nombre.replace(/,/g, " ");
-        let presentacionSegura = p.presentacion.replace(/,/g, " ");
-        csv += `${codigo},${nombreSeguro},${presentacionSegura},${p.precioAnterior}\n`;
+        csv += `${codigo},${p.nombre.replace(/,/g, " ")},${p.presentacion.replace(/,/g, " ")},${p.precioAnterior}\n`;
       }
- 
       let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       let link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
@@ -260,35 +265,26 @@
  
     function importarCSV() {
       let archivo = document.getElementById("archivoCSV").files;
-      if (!archivo) {
-        alert("Selecciona un archivo CSV primero.");
-        return;
-      }
- 
+      if (!archivo) { alert("Selecciona un archivo CSV."); return; }
       let lector = new FileReader();
       lector.onload = function(e) {
         let lineas = e.target.result.split("\n");
         let importados = 0;
-        
         for (let i = 1; i < lineas.length; i++) {
           let linea = lineas[i].trim();
           if (!linea) continue;
-          
           let campos = linea.split(",");
           if (campos.length >= 4) {
             let codigo = campos.trim();
-            let nombre = campos.trim();
-            let presentacion = campos.trim();
             let precioAnterior = parseFloat(campos);
-            
             if (codigo && !isNaN(precioAnterior)) {
-              productos[codigo] = { nombre, presentacion, precioAnterior };
+              productos[codigo] = { nombre: campos.trim(), presentacion: campos.trim(), precioAnterior };
               importados++;
             }
           }
         }
         guardarLocal();
-        alert(`Base importada correctamente. Se actualizaron ${importados} productos.`);
+        alert(`Base importada. Se actualizaron ${importados} productos.`);
       };
       lector.readAsText(archivo);
     }
@@ -299,28 +295,23 @@
       actualizarCarrito();
     }
 
-    // INICIALIZADOR DEL ESCÁNER AL CARGAR LA WEB
+    // INICIALIZADOR DE INTERFAZ DE LA LIBRERÍA
     document.addEventListener("DOMContentLoaded", () => {
-      const html5QrCode = new Html5Qrcode("lector-camara");
-      
-      const config = { 
-        fps: 15,
-        qrbox: { width: 320, height: 160 } 
-      };
-
-      html5QrCode.start(
-        { facingMode: "environment" },
-        config,
-        (decodedText) => {
-          // Envía el código leído por cámara al procesador
-          procesarCodigo(decodedText);
+      // Usamos el constructor visual por defecto
+      html5QrcodeScanner = new Html5QrcodeScanner(
+        "lector-camara", 
+        { 
+          fps: 10, 
+          qrbox: { width: 250, height: 125 },
+          rememberLastUsedCamera: true // Recuerda tu cámara si vuelves a entrar
         },
-        (errorMessage) => {
-          // Silencia los reportes repetitivos de búsqueda
-        }
-      ).catch((err) => {
-        console.error("No se pudo iniciar la cámara:", err);
-      });
+        /* verbose= */ false
+      );
+      
+      html5QrcodeScanner.render(
+        (decodedText) => { procesarCodigo(decodedText); }, // Éxito
+        (errorMessage) => { /* Silenciar errores constantes de enfoque */ }
+      );
     });
   </script>
 </body>
