@@ -2,37 +2,72 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <!-- 📱 LÍNEA NUEVA: Vital para que el celular no reduzca la escala de la página -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comparador de Precios con Carrito</title>
   
   <!-- Servidor CDN de Cloudflare: Más rápido y estable -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
+  <script src="https://cloudflare.com" type="text/javascript"></script>
   
   <style>
     body { font-family: Arial, sans-serif; text-align: center; }
-    input { padding: 10px; font-size: 16px; margin: 10px; width: 250px; }
-    button { padding: 10px 20px; font-size: 16px; background: #3498db; color: white; border: none; border-radius: 5px; margin: 5px; cursor: pointer; }
+    
+    /* Inputs más grandes y adaptables */
+    input { 
+      padding: 15px; 
+      font-size: 18px; 
+      margin: 10px; 
+      width: 80%; 
+      max-width: 350px; 
+      box-sizing: border-box; 
+    }
+    
+    /* 🎯 BOTONES MÁS GRANDES Y RESPONSIVOS */
+    button { 
+      padding: 15px 30px; 
+      font-size: 18px; 
+      background: #3498db; 
+      color: white; 
+      border: none; 
+      border-radius: 8px; 
+      margin: 8px auto; 
+      cursor: pointer; 
+      width: 80%; /* Ocupa el 80% del ancho de cualquier pantalla */
+      max-width: 350px; /* Evita que se deforme en computadoras */
+      display: block; /* Se apilan uno sobre otro */
+      font-weight: bold;
+    }
     button:hover { background: #2980b9; }
     button:disabled { background: #95a5a6; cursor: not-allowed; }
-    table { margin: 20px auto; border-collapse: collapse; width: 90%; background: #fff; }
-    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    
+    table { margin: 20px auto; border-collapse: collapse; width: 95%; background: #fff; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
     th { background-color: #3498db; color: white; }
-    #carrito { font-size: 20px; font-weight: bold; margin: 15px; color: #2c3e50; }
+    #carrito { font-size: 24px; font-weight: bold; margin: 15px; color: #2c3e50; }
     .oculto { display: none; }
     
     #reader { width: 100%; max-width: 400px; margin: 0 auto; border-radius: 8px; background: #000; display: none; }
+    
     .manual-box {
       margin: 15px auto;
-      padding: 10px;
-      width: 100%;
+      padding: 15px;
+      width: 90%;
       max-width: 380px;
       border: 1px dashed #7f8c8d;
       border-radius: 5px;
       background: #f8f9fa;
       box-sizing: border-box;
     }
+    
+    /* Botón interno de la caja manual adaptado */
+    .manual-box button {
+      width: 100%;
+      margin-top: 10px;
+    }
+    
     #status { font-size: 14px; color: #7f8c8d; margin-top: 5px; }
 
-    /* 🟢 NUEVO: Estilos para alinear los botones uno sobre otro */
+    /* Estilos para alinear los botones uno sobre otro */
     .botones-container {
       display: flex;
       flex-direction: column;
@@ -41,12 +76,16 @@
       margin-top: 15px;
       margin-bottom: 30px;
     }
+    
     .botones-container input[type="file"] {
-      width: auto;
+      width: 80%;
+      max-width: 350px;
+      padding: 10px;
       margin: 0;
     }
+    
     .botones-container button {
-      width: 250px; /* Ancho uniforme para que se vean ordenados */
+      width: 100%; /* Toma el ancho máximo definido en el estilo general */
     }
   </style>
 </head>
@@ -71,7 +110,7 @@
     </table>
   </div>
  
-  <p>Escanea el código de barras</p>
+  <p style="font-size: 18px; font-weight: bold;">Escanea el código de barras</p>
   
   <!-- El botón inicia bloqueado y cambia de color hasta que la librería responda -->
   <button id="btnStart" onclick="encender()" disabled>⏳ Cargando cámara...</button>
@@ -89,7 +128,7 @@
  
   <h3>Respaldo de la base</h3>
 
-  <!-- 🟢 NUEVO: Div contenedor para alinear los botones -->
+  <!-- Div contenedor para alinear los botones -->
   <div class="botones-container">
     <button onclick="exportarCSV()">Exportar base a CSV</button>
     <input type="file" id="archivoCSV" accept=".csv">
@@ -132,7 +171,6 @@
       });
     }
 
-    // Monitorea que la librería se cargue en memoria de forma real
     function verificarLibreria() {
       const btnStart = document.getElementById('btnStart');
       const statusText = document.getElementById('status');
@@ -140,11 +178,10 @@
       if (typeof Html5Qrcode !== "undefined") {
         btnStart.disabled = false;
         btnStart.innerText = "Encender Cámara";
-        btnStart.style.background = "#2ecc71"; // Verde llamativo
+        btnStart.style.background = "#2ecc71"; 
         statusText.innerText = "Librería cargada. Listo para escanear.";
         statusText.style.color = "#27ae60";
       } else {
-        // Si no ha cargado, vuelve a verificar en medio segundo
         setTimeout(verificarLibreria, 500);
       }
     }
@@ -242,6 +279,22 @@
       guardarLocal();
     }
 
+    function guardarNuevoProducto(codigo) {
+      let nombre = document.getElementById("nombre").value.trim();
+      let presentacion = document.getElementById("presentacion").value.trim();
+      let precioNuevo = parseFloat(document.getElementById("precioNuevo").value);
+
+      if (!nombre || !presentacion || isNaN(precioNuevo) || precioNuevo < 0) {
+        alert("Por favor llena todos los campos correctamente.");
+        return;
+      }
+
+      productos[codigo] = { nombre, presentacion, precioAnterior: precioNuevo };
+      guardarLocal();
+      alert("¡Producto guardado exitosamente!");
+      buscarProducto(codigo);
+    }
+
     function agregarCarrito(codigo, nombre, precio) {
       let item = detalle.find(i => i.codigo === codigo);
       if (item) {
@@ -262,10 +315,8 @@
       alert("Carrito restablecido.");
     }
 
-    // Funciones Dummy para evitar que tire error en consola si se presionan los botones
-    function exportarCSV() { alert("Función Exportar CSV aún no programada."); }
-    function importarCSV() { alert("Función Importar CSV aún no programada."); }
-    function guardarNuevoProducto() { alert("Función Guardar Producto aún no programada."); }
+    function exportarCSV() { alert("Función de exportar CSV no escrita aún."); }
+    function importarCSV() { alert("Función de importar CSV no escrita aún."); }
   </script>
 </body>
 </html>
