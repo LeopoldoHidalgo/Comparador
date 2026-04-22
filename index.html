@@ -2,35 +2,90 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <!-- Línea crucial para que el celular no reduzca el tamaño del contenido -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Comparador de Precios con Carrito</title>
   
   <!-- Servidor CDN de Cloudflare: Más rápido y estable -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" type="text/javascript"></script>
+  <script src="https://cloudflare.com" type="text/javascript"></script>
   
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; }
-    input { padding: 10px; font-size: 16px; margin: 10px; width: 250px; }
-    button { padding: 10px 20px; font-size: 16px; background: #3498db; color: white; border: none; border-radius: 5px; margin: 5px; cursor: pointer; }
+    body { font-family: Arial, sans-serif; text-align: center; background: #f4f6f7; margin: 0; padding: 15px; }
+    input { padding: 12px; font-size: 16px; margin: 10px 0; width: 100%; max-width: 380px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+    button { padding: 12px 20px; font-size: 16px; background: #3498db; color: white; border: none; border-radius: 5px; margin: 5px; cursor: pointer; font-weight: bold; }
     button:hover { background: #2980b9; }
     button:disabled { background: #95a5a6; cursor: not-allowed; }
-    table { margin: 20px auto; border-collapse: collapse; width: 90%; background: #fff; }
+    
+    table { margin: 20px auto; border-collapse: collapse; width: 100%; max-width: 600px; background: #fff; font-size: 14px; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
     th { background-color: #3498db; color: white; }
-    #carrito { font-size: 20px; font-weight: bold; margin: 15px; color: #2c3e50; }
+    
+    #carrito { font-size: 22px; font-weight: bold; margin: 15px; color: #2c3e50; }
     .oculto { display: none; }
     
     #reader { width: 100%; max-width: 400px; margin: 0 auto; border-radius: 8px; background: #000; display: none; }
+    
+    #btnStart {
+      display: block;
+      margin: 15px auto;
+      padding: 15px 30px;
+      font-size: 18px;
+    }
+
     .manual-box {
       margin: 15px auto;
-      padding: 10px;
+      padding: 15px;
       width: 100%;
       max-width: 380px;
       border: 1px dashed #7f8c8d;
-      border-radius: 5px;
-      background: #f8f9fa;
+      border-radius: 8px;
+      background: #fff;
+      box-sizing: border-box;
+      display: inline-block;
+    }
+
+    #status { font-size: 14px; color: #7f8c8d; margin-top: 5px; }
+
+    /* NUEVA SECCIÓN: Caja gris para el respaldo de la base */
+    .seccion-respaldo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: 380px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #eaeded; /* Fondo gris suave */
+      border-radius: 12px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05); /* Sombra ligera */
       box-sizing: border-box;
     }
-    #status { font-size: 14px; color: #7f8c8d; margin-top: 5px; }
+
+    /* Homologamos el tamaño de todos los controles en esta sección */
+    .seccion-respaldo button, 
+    .seccion-respaldo input[type="file"] {
+      width: 100%;
+      margin: 8px 0;
+      box-sizing: border-box;
+      font-size: 15px;
+    }
+
+    /* Espaciador específico para el botón de archivo */
+    .seccion-respaldo input[type="file"] {
+      background: #fff;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #bdc3c7;
+    }
+
+    /* Estilos del área de resultados en móviles */
+    #resultado {
+      width: 100%;
+      max-width: 380px;
+      margin: 15px auto;
+      box-sizing: border-box;
+    }
   </style>
 </head>
 <body>
@@ -38,16 +93,16 @@
   
   <div id="carrito">🛒 Total carrito: $0.00</div>
   
-  <button onclick="toggleLista()">👁️ Mostrar / Ocultar lista de compras</button>
+  <button onclick="toggleLista()">👁️ Mostrar / Ocultar lista</button>
   
   <div id="contenedorLista" class="oculto">
-    <table id="detalleCarrito">
+    <table>
       <thead>
         <tr>
           <th>Producto</th>
-          <th>Cantidad</th>
-          <th>Precio unitario</th>
-          <th>Subtotal</th>
+          <th>Cant.</th>
+          <th>Precio</th>
+          <th>Subt.</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -56,26 +111,27 @@
  
   <p>Escanea el código de barras</p>
   
-  <!-- El botón inicia bloqueado y cambia de color hasta que la librería responda -->
   <button id="btnStart" onclick="encender()" disabled>⏳ Cargando cámara...</button>
   <div id="status">Por favor, espera a que el botón se active</div>
   
   <div id="reader"></div>
 
   <div class="manual-box">
-    <p style="margin: 5px; font-size: 14px; color: #555;">Si la cámara no enciende o falla, escribe aquí:</p>
+    <p style="margin: 5px; font-size: 14px; color: #555;">Si la cámara falla, ingresa el código aquí:</p>
     <input type="text" id="codigoManual" placeholder="Escribe el código a mano">
     <button onclick="buscarManual()">Buscar manual</button>
   </div>
 
   <div id="resultado"></div>
  
-  <h3>Respaldo de la base</h3>
-  <button onclick="exportarCSV()">Exportar base a CSV</button><br>
-  <input type="file" id="archivoCSV" accept=".csv">
-  <button onclick="importarCSV()">Importar base desde CSV</button>
- 
-  <button onclick="resetCarrito()">🔄 Restablecer carrito</button>
+  <!-- Sección de respaldo de la base modificada con fondo gris -->
+  <div class="seccion-respaldo">
+    <h3 style="margin-top: 0; color: #2c3e50;">💾 Respaldo de la base</h3>
+    <button onclick="exportarCSV()">Exportar base a CSV</button>
+    <input type="file" id="archivoCSV" accept=".csv">
+    <button onclick="importarCSV()">Importar base desde CSV</button>
+    <button style="background: #e74c3c;" onclick="resetCarrito()">🔄 Restablecer carrito</button>
+  </div>
  
   <script>
     let productos = JSON.parse(localStorage.getItem("productos")) || {
@@ -98,7 +154,7 @@
  
     function actualizarCarrito() {
       document.getElementById("carrito").textContent = `🛒 Total carrito: $${totalCarrito.toFixed(2)}`;
-      let tbody = document.querySelector("#detalleCarrito tbody");
+      let tbody = document.querySelector("#contenedorLista tbody");
       tbody.innerHTML = "";
       detalle.forEach(item => {
         tbody.innerHTML += `
@@ -112,7 +168,6 @@
       });
     }
 
-    // Monitorea que la librería se cargue en memoria de forma real
     function verificarLibreria() {
       const btnStart = document.getElementById('btnStart');
       const statusText = document.getElementById('status');
@@ -120,11 +175,10 @@
       if (typeof Html5Qrcode !== "undefined") {
         btnStart.disabled = false;
         btnStart.innerText = "Encender Cámara";
-        btnStart.style.background = "#2ecc71"; // Verde llamativo
+        btnStart.style.background = "#2ecc71"; 
         statusText.innerText = "Librería cargada. Listo para escanear.";
         statusText.style.color = "#27ae60";
       } else {
-        // Si no ha cargado, vuelve a verificar en medio segundo
         setTimeout(verificarLibreria, 500);
       }
     }
@@ -143,6 +197,7 @@
         scanner.stop().then(() => {
           scanner.clear();
           readerDiv.style.display = 'none';
+          
           btnStart.style.display = 'block';
           btnStart.innerText = "Escanear otro producto";
           buscarProducto(text);
@@ -171,19 +226,24 @@
       if (productos[codigo]) {
         let p = productos[codigo];
         contenedor.innerHTML = `
-          <h3>${p.nombre} - ${p.presentacion}</h3>
-          <p>Precio anterior: $${p.precioAnterior.toFixed(2)}</p>
-          <input type="number" id="precioActual" placeholder="Ingresa precio actual" step="0.01">
-          <button onclick="comparar('${codigo}')">Comparar</button>
+          <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+            <h3>${p.nombre}</h3>
+            <p style="color: #7f8c8d;">${p.presentacion}</p>
+            <p>Precio anterior: <strong>$${p.precioAnterior.toFixed(2)}</strong></p>
+            <input type="number" id="precioActual" placeholder="Ingresa precio actual" step="0.01">
+            <button onclick="comparar('${codigo}')" style="width: 100%; margin: 10px 0;">Comparar</button>
+          </div>
         `;
       } else {
         contenedor.innerHTML = `
-          <h3>Producto no registrado (${codigo})</h3>
-          <p>Ingresa los datos para guardarlo en la base de datos:</p>
-          <input type="text" id="nombre" placeholder="Nombre"><br>
-          <input type="text" id="presentacion" placeholder="Presentación"><br>
-          <input type="number" id="precioNuevo" placeholder="Precio actual" step="0.01"><br>
-          <button onclick="guardarNuevoProducto('${codigo}')">Guardar en la base de datos</button>
+          <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+            <h3 style="color: #e67e22;">Producto no registrado</h3>
+            <p style="font-size: 13px; color: #7f8c8d;">Código: ${codigo}</p>
+            <input type="text" id="nombre" placeholder="Nombre del producto"><br>
+            <input type="text" id="presentacion" placeholder="Presentación"><br>
+            <input type="number" id="precioNuevo" placeholder="Precio actual" step="0.01"><br>
+            <button onclick="guardarNuevoProducto('${codigo}')" style="width: 100%; margin: 10px 0; background: #27ae60;">Guardar en Base</button>
+          </div>
         `;
       }
     }
@@ -202,20 +262,23 @@
       let porcentaje = ((diferencia / p.precioAnterior) * 100).toFixed(2);
  
       document.getElementById("resultado").innerHTML = `
-        <h3>${p.nombre} - ${p.presentacion}</h3>
-        <table>
-          <tr>
-            <th>Precio anterior</th>
-            <th>Precio actual</th>
-            <th>Diferencia</th>
-          </tr>
-          <tr>
-            <td>$${p.precioAnterior.toFixed(2)}</td>
-            <td>$${precioActual.toFixed(2)}</td>
-            <td>$${diferencia.toFixed(2)} (${porcentaje}%)</td>
-          </tr>
-        </table>
-        <button onclick="agregarCarrito('${codigo}', '${p.nombre}', ${precioActual})">➕ Agregar al carrito</button>
+        <div style="background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+          <h3>${p.nombre}</h3>
+          <table style="width: 100%; margin: 10px 0;">
+            <tr>
+              <th>Anterior</th>
+              <th>Actual</th>
+            </tr>
+            <tr>
+              <td>$${p.precioAnterior.toFixed(2)}</td>
+              <td>$${precioActual.toFixed(2)}</td>
+            </tr>
+          </table>
+          <p style="font-weight: bold; color: ${diferencia > 0 ? '#e74c3c' : '#27ae60'}">
+            Diferencia: $${diferencia.toFixed(2)} (${porcentaje}%)
+          </p>
+          <button onclick="agregarCarrito('${codigo}', '${p.nombre}', ${precioActual})" style="width: 100%; background: #2ecc71;">➕ Agregar al carrito</button>
+        </div>
       `;
  
       productos[codigo].precioAnterior = precioActual;
@@ -249,11 +312,11 @@
       guardarLocal();
  
       document.getElementById("resultado").innerHTML = `
-        <div style="background: #e8f4f8; padding: 15px; border-radius: 5px; margin: 10px auto; width: 90%; max-width: 400px; box-sizing: border-box;">
-          <p style="color: #27ae60; font-weight: bold;">✔ Producto guardado con éxito.</p>
-          <h3>${nombre} - ${presentacion}</h3>
-          <p>Precio registrado: $${precioActual.toFixed(2)}</p>
-          <button onclick="agregarCarrito('${codigo}', '${nombre}', ${precioActual})">➕ Agregar al carrito</button>
+        <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; border: 1px solid #2ecc71;">
+          <p style="color: #27ae60; font-weight: bold; margin-top: 0;">✔ Guardado con éxito.</p>
+          <h3>${nombre}</h3>
+          <p>Registrado con: $${precioActual.toFixed(2)}</p>
+          <button onclick="agregarCarrito('${codigo}', '${nombre}', ${precioActual})" style="width: 100%; background: #2ecc71;">➕ Agregar al carrito</button>
         </div>
       `;
     }
@@ -304,7 +367,6 @@
       actualizarCarrito();
     }
 
-    // Al cargar la página ejecutamos la vigilancia de la biblioteca
     document.addEventListener("DOMContentLoaded", verificarLibreria);
   </script>
 </body>
